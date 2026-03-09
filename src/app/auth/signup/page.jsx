@@ -55,8 +55,6 @@ export default function SignUp() {
     } catch (err) {
       toast.error(err.message);
       setError(err.message);
-    } finally {
-      setSubmitting(false);
     }
   }
 

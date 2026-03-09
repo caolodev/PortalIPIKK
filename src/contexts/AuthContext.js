@@ -37,32 +37,24 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-      if (!firebaseUser.emailVerified) {
-        await signOut(auth);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
+      try {
+        if (firebaseUser && firebaseUser.emailVerified) {
+          const userRef = doc(db, "Users", firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
 
-      const userRef = doc(db, "Users", firebaseUser.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        await signOut(auth);
+          if (userSnap.exists()) {
+            setUser({
+              uid: firebaseUser.uid,
+              ...userSnap.data(),
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Falha ao verificar estado de autenticação", error);
+      } finally {
         setUser(null);
         setLoading(false);
-        return;
       }
-      setUser({
-        uid: firebaseUser.uid,
-        ...userSnap.data(),
-      });
-      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -173,5 +165,5 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);\
+  return useContext(AuthContext);
 }

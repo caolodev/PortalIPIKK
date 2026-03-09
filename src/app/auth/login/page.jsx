@@ -36,6 +36,10 @@ export default function Login() {
       }, 1500);
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      // O estado de submissão deve ser resetado no 'finally'
+      // embora o redirecionamento desmonte o componente em caso de sucesso.
+      // Isso garante consistência com as outras páginas.
       setSubmitting(false);
     }
   }
