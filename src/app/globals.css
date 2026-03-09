@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@theme {
+  --breakpoint-sm: 710px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+#nprogress .bar {
+  background: #0f2c59;
+  height: 3px;
+}
+
+#nprogress .peg {
+  box-shadow:
+    0 0 10px #0f2c59,
+    0 0 5px #0f2c59;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@layer components {
+  .page {
+    @apply animate-[fadeIn_.3s_ease];
+  }
+  .links {
+    @apply text-sm font-semibold text-gray-600 hover:text-[#0F2C59] transition-colors;
+  }
+  .inputs {
+    @apply flex w-full border px-3 py-1 text-base shadow-sm transition-colors md:text-sm pl-12 pr-12 h-14 rounded-2xl border-gray-100 bg-gray-50/50 font-medium outline-[#0F2C59];
+  }
+  .button-submit {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 w-full h-14 rounded-2xl text-lg font-black bg-[#0F2C59] hover:bg-[#0F2C59]/90 shadow-xl shadow-blue-900/10 transition-all cursor-pointer text-white;
+  }
+  .google-button {
+    @apply mt-5 inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm border shadow-xs active:shadow-none min-h-9 px-4 py-4 w-full h-14 rounded-2xl font-black border-gray-100 bg-white hover:bg-gray-50 active:scale-[0.98] transition-all cursor-pointer;
+  }
+  .label {
+    @apply peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs font-black uppercase tracking-widest text-gray-400 ml-1;
+  }
+  .icon {
+    @apply absolute left-3 top-4 text-2xl text-gray-400 group-focus-within:text-[#0F2C59] transition-colors;
+  }
+  .icon-right {
+    @apply absolute right-3 top-4 text-2xl text-gray-400 group-focus-within:text-[#0F2C59] transition-colors;
+  }
+}
