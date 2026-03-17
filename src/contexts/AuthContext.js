@@ -38,7 +38,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        if (firebaseUser && firebaseUser.emailVerified) {
+        if (firebaseUser /*&& firebaseUser.emailVerified */) {
           const userRef = doc(db, "Users", firebaseUser.uid);
           const userSnap = await getDoc(userRef);
 
@@ -52,7 +52,6 @@ export function AuthProvider({ children }) {
       } catch (error) {
         console.error("Falha ao verificar estado de autenticação", error);
       } finally {
-        setUser(null);
         setLoading(false);
       }
     });
@@ -85,7 +84,7 @@ export function AuthProvider({ children }) {
       password,
     );
 
-    await sendEmailVerification(userCredential.user);
+    // await sendEmailVerification(userCredential.user);
     await setDoc(doc(db, "Users", userCredential.user.uid), {
       nomeCompleto: dados.nomeCompleto,
       processo: process,
@@ -95,8 +94,8 @@ export function AuthProvider({ children }) {
       ativo: true,
       createdAt: new Date(),
     });
-
     await signOut(auth);
+    setUser(null);
   }
 
   async function login(email, password) {
@@ -106,10 +105,11 @@ export function AuthProvider({ children }) {
       password,
     );
 
+    /*
     if (!userCredential.user.emailVerified) {
       await signOut(auth);
-      throw new Error("Verifique o seu email antes de logar");
-    }
+      throw new Error("Verifique o seu email antes de Entrar");
+    }*/
     const userRef = doc(db, "Users", userCredential.user.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {

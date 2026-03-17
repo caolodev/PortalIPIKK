@@ -8,8 +8,8 @@ import {
   faEnvelope,
   faEye,
   faEyeSlash,
-} from "@fortawesome/free-regular-svg-icons";
-import { faLock } from "@fortawesome/free-solid-svg-icons";
+  faLock,
+} from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import Image from "next/image";
 import FooterForm from "../../../components/FooterForm";
@@ -98,11 +98,22 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                  <FontAwesomeIcon
-                    icon={showPassword ? faEyeSlash : faEye}
-                    className="icon-right"
+                  <div
+                    className="icon-right cursor-pointer"
                     onClick={(e) => setShowPassword(!showPassword)}
-                  />
+                  >
+                    {showPassword ? (
+                      <FontAwesomeIcon
+                        icon={faEyeSlash}
+                        className="w-[18px] h-[18px]"
+                      />
+                    ) : (
+                      <FontAwesomeIcon
+                        icon={faEye}
+                        className="w-[18px] h-[18px]"
+                      />
+                    )}
+                  </div>
                 </div>
                 <div className="text-right">
                   <Link
@@ -114,7 +125,7 @@ export default function Login() {
                 </div>
               </div>
               <ButtonSubmit title={"Entrar"} submitting={submitting} />
-              <div className="relative flex justify-center text-[10px] uppercase font-black tracking-[0.2em] items-center">
+              {/*<div className="relative flex justify-center text-[10px] uppercase font-black tracking-[0.2em] items-center">
                 <span className="bg-white px-4 text-gray-300">
                   ou entrar com
                 </span>
@@ -128,7 +139,8 @@ export default function Login() {
                 height={30}
               />
               <span>Entrar com Google</span>
-            </button>
+            </button>*/}
+            </form>
             <FooterForm
               link={"/auth/signup"}
               question={"Não Tem Conta? "}

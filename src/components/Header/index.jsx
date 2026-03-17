@@ -2,16 +2,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faArrowRightFromBracket,
-  faChartLine,
-} from "@fortawesome/free-solid-svg-icons";
+import UserMenu from "../Dashboard/UserMenu";
+
 export default function Header({
   user,
-  logout,
-  setDropDownMenu,
-  dropDownMenu,
+  items,
+  isOpen,
+  setIsOpen,
+  menuRef,
+  shortName,
+  firstName,
+  lastName,
+  role,
 }) {
   const [mobile, setMobile] = useState(false);
   return (
@@ -118,33 +120,22 @@ export default function Header({
                     </Link>
                   </>
                 ) : (
-                  <div
-                    className="p-1.75 rounded-full bg-[#0F2C59] cursor-pointer relative"
-                    onClick={() => setDropDownMenu(!dropDownMenu)}
-                  >
-                    <span className="text-white font-bold">
-                      {user.nomeCompleto
-                        .split(" ")[0]
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </span>
-                    {dropDownMenu && (
-                      <div className="absolute top-12 z-50 py-2 w-40 px-3 right-0 rounded-xl flex flex-col gap-2 shadow-[0px_0px_4px_rgba(0,0,0,0.2)] text-[13px] text-gray-700 cursor-pointer transition-all bg-[#ffffffee]">
-                        <div
-                          className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-200"
-                          onClick={logout}
-                        >
-                          <FontAwesomeIcon icon={faArrowRightFromBracket} />
-                          <button>Logout</button>
-                        </div>
-                        <Link
-                          href={"/redirect"}
-                          className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-200"
-                        >
-                          <FontAwesomeIcon icon={faChartLine} />
-                          <span>Dashboard</span>
-                        </Link>
-                      </div>
+                  <div className="relative" ref={menuRef}>
+                    <div
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-[#0F2C59] cursor-pointer hover:shadow-md transition-all active:scale-95"
+                      onClick={() => setIsOpen(!isOpen)}
+                    >
+                      <span className="text-white font-bold text-sm">
+                        {shortName}
+                      </span>
+                    </div>
+                    {isOpen && (
+                      <UserMenu
+                        firstName={firstName}
+                        lastName={lastName}
+                        role={role}
+                        items={items}
+                      />
                     )}
                   </div>
                 )}

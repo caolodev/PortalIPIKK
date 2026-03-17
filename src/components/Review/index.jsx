@@ -17,7 +17,7 @@ export default function review() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
           <Link
             href={"/redirect"}
-            className="transition-colorsborder py-4 px-12 rounded-full bg-white text-[#0F2C59] hover:bg-blue-50 font-black text-lg"
+            className="transition-colors border py-4 px-12 rounded-full bg-white text-[#0F2C59] hover:bg-blue-50 font-black text-lg"
           >
             Ir para painel
           </Link>

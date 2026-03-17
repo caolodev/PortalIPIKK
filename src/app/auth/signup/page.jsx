@@ -14,8 +14,10 @@ import {
   faEnvelope,
   faEye,
   faEyeSlash,
-} from "@fortawesome/free-regular-svg-icons";
-import { faLock, faFingerprint } from "@fortawesome/free-solid-svg-icons";
+  faLock,
+  faFingerprint,
+} from "@fortawesome/free-solid-svg-icons";
+
 export default function SignUp() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -47,14 +49,15 @@ export default function SignUp() {
         password,
       });
 
-      toast.success("Conta criada com sucesso! Verifique o email.");
-
+      toast.success("Conta criada com sucesso!");
+      setSubmitting(false);
       setTimeout(() => {
-        router.push("/auth/login");
+        router.replace("/auth/login");
       }, 2000);
     } catch (err) {
       toast.error(err.message);
       setError(err.message);
+      setSubmitting(false);
     }
   }
 
@@ -122,7 +125,7 @@ export default function SignUp() {
                   />
                 </div>
               </div>
-              <div className="sapce-y-2">
+              <div className="space-y-2">
                 <label htmlFor="email" className="label">
                   Email:
                 </label>
@@ -154,11 +157,22 @@ export default function SignUp() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    <FontAwesomeIcon
-                      icon={showPassword ? faEyeSlash : faEye}
-                      className="icon-right"
+                    <div
+                      className="icon-right cursor-pointer"
                       onClick={(e) => setShowPassword(!showPassword)}
-                    />
+                    >
+                      {showPassword ? (
+                        <FontAwesomeIcon
+                          icon={faEyeSlash}
+                          className="w-[18px] h-[18px]"
+                        />
+                      ) : (
+                        <FontAwesomeIcon
+                          icon={faEye}
+                          className="w-[18px] h-[18px]"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -175,11 +189,22 @@ export default function SignUp() {
                       id="checkPassword"
                       className="inputs"
                     />
-                    <FontAwesomeIcon
-                      icon={showCheckPassword ? faEyeSlash : faEye}
-                      className="icon-right"
+                    <div
+                      className="icon-right cursor-pointer"
                       onClick={(e) => setCheckShowPassword(!showCheckPassword)}
-                    />
+                    >
+                      {showCheckPassword ? (
+                        <FontAwesomeIcon
+                          icon={faEyeSlash}
+                          className="w-[18px] h-[18px]"
+                        />
+                      ) : (
+                        <FontAwesomeIcon
+                          icon={faEye}
+                          className="w-[18px] h-[18px]"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
