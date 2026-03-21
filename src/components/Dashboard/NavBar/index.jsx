@@ -7,6 +7,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import UserMenu from "../UserMenu";
 export default function NavBar({
   onOpen,
@@ -19,6 +20,7 @@ export default function NavBar({
   const { logout } = useAuth();
   const [showDetails, setShowDetails] = useState(false);
   const menuRef = useRef(null);
+  const router = useRouter();
 
   // Fecha o menu ao clicar fora dele
   useEffect(() => {
@@ -37,15 +39,10 @@ export default function NavBar({
 
   const menuItems = [
     {
-      label: "Configurações",
-      icon: faGear,
-      onClick: () => console.log("Config"),
-    },
-    {
       label: "Meu perfil",
       icon: faUser,
       divider: true,
-      onClick: () => console.log("Perfil"),
+      onClick: () => router.push("/dashboard/profile"),
     },
     {
       label: "Sair",

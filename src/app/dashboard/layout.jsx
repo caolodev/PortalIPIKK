@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }) {
       router.replace("/auth/login");
       return;
     }
-    if (roleURL !== user.role.toLowerCase()) {
+    if (roleURL !== user.role.toLowerCase() && roleURL !== "profile") {
       router.replace(`/dashboard/${user.role.toLowerCase()}`);
     }
   }, [router, user, roleURL, loading]);
@@ -40,7 +40,10 @@ export default function DashboardLayout({ children }) {
   const shortName = firstName.slice(0, 2).toUpperCase();
   const menu = user.role ? dashboardMenu[user.role.toLowerCase()] : [];
   const activeItem = menu?.find((item) => item.path === pathName);
-  const title = activeItem?.label || "Dashboard";
+  const title =
+    pathName === "/dashboard/profile"
+      ? " Meu Perfil"
+      : activeItem?.label || "Dashboard";
 
   return (
     <div className="relative">
@@ -53,7 +56,7 @@ export default function DashboardLayout({ children }) {
         shortName={shortName}
         role={role}
       />
-      <main className="md:ml-[260px] mt-16 min-h-screen p-5">{children}</main>
+      <main className="md:ml-65 mt-16 min-h-screen p-5">{children}</main>
     </div>
   );
 }

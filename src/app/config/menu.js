@@ -4,6 +4,7 @@ import {
   faChalkboardUser,
   faTableColumns,
   faLayerGroup,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 export const dashboardMenu = {
   director: [
@@ -23,6 +24,11 @@ export const dashboardMenu = {
       path: "/dashboard/director/relatorios",
       icon: faFileLines,
     },
+    {
+      label: "Meu Perfil",
+      path: "/dashboard/profile",
+      icon: faUser,
+    },
   ],
 
   professor: [
@@ -37,6 +43,11 @@ export const dashboardMenu = {
       path: "/dashboard/professor/notas",
       icon: faGraduationCap,
     },
+    {
+      label: "Meu Perfil",
+      path: "/dashboard/profile",
+      icon: faUser,
+    },
   ],
 
   aluno: [
@@ -46,6 +57,11 @@ export const dashboardMenu = {
       label: "Relatórios",
       path: "/dashboard/aluno/relatorios",
       icon: faFileLines,
+    },
+    {
+      label: "Meu Perfil",
+      path: "/dashboard/profile",
+      icon: faUser,
     },
   ],
 };
