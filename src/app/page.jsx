@@ -66,7 +66,7 @@ export default function Home() {
           lastName={lastName}
           role={user?.role}
         />
-        <main className="mt-14.5 w-full">
+        <main className="mt-14.5 w-full bg-white">
           <Hero user={user} />
           <Sobre />
           <Funcionalidades />

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+input {
+  color: var(--foreground);
+}
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -17,17 +23,26 @@
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Forçar tema claro para consistência em todas as máquinas */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Remover variações automáticas de tema do sistema */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
 }
 #nprogress .bar {
   background: #0f2c59;

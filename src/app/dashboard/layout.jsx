@@ -40,13 +40,25 @@ export default function DashboardLayout({ children }) {
   const shortName = firstName.slice(0, 2).toUpperCase();
   const menu = user.role ? dashboardMenu[user.role.toLowerCase()] : [];
   const activeItem = menu?.find((item) => item.path === pathName);
-  const title =
-    pathName === "/dashboard/profile"
-      ? " Meu Perfil"
-      : activeItem?.label || "Dashboard";
+  let title = "Dashboard";
+  if (pathName === "/dashboard/profile") {
+    title = "Meu Perfil";
+  } else if (activeItem) {
+    title = activeItem.label;
+  } else {
+    // Procurar pelo item pai se for um subpath
+    const pathParts = pathName.split("/").filter(Boolean);
+    if (pathParts.length >= 3) {
+      const parentPath = `/${pathParts.slice(0, 3).join("/")}`;
+      const parentItem = menu?.find((item) => item.path === parentPath);
+      if (parentItem) {
+        title = parentItem.label;
+      }
+    }
+  }
 
   return (
-    <div className="relative">
+    <div className="relative bg-gray-50 min-h-screen">
       <SideBar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <NavBar
         onOpen={() => setSidebarOpen(true)}
