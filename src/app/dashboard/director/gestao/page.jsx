@@ -7,8 +7,8 @@ export default function GestaoAcademica() {
       <ul>
         <Link href={"./gestao/ano_lectivo"}>Ano Lectivo</Link>
         <Link href={"./gestao/cursos"}>Cursos</Link>
-        <Link href={"./gestao/cursos"}>Turmas</Link>
-        <Link href={"./gestao/trimestre"}>Ano Lectivo</Link>
+        <Link href={"./gestao/turmas"}>Turmas</Link>
+        <Link href={"./gestao/trimestre"}>Trimestre</Link>
       </ul>
     </div>
   );

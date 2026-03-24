@@ -1,140 +1,162 @@
 "use client";
 import { useState, useEffect } from "react";
 import {
-  getAnoLectivo,
-  activateAnoLectivo,
-} from "../../../../../services/anoLectivo";
+  getAcademicYears,
+  activateAcademicYear,
+  closeAcademicYear,
+  closeFinishedAcademicYears,
+} from "../../../../../services/academicYear";
+import AcademicYearPageHeader from "../../../../../components/AcademicYearPageHeader";
+import FilterStatusSelect from "../../../../../components/FilterStatusSelect";
+import AcademicYearTable from "../../../../../components/AcademicYearTable";
+import PaginationControls from "../../../../../components/PaginationControls";
 import NewAnoLectivo from "../../../../../components/NewAnoLectivo";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faTrashCan } from "@fortawesome/free-regular-svg-icons";
-export default function AnoLectivo() {
-  const [anoLectivo, setAnoLectivo] = useState([]);
-  const [addAnoLectivo, setAddAnoLectivo] = useState(false);
-  const [editingAno, setEditingAno] = useState(null);
-  const [loadingId, setLoadingId] = useState(null);
+import toast from "react-hot-toast";
 
-  const handleToggleStatus = async (id) => {
+export default function AcademicYearPage() {
+  const [academicYears, setAcademicYears] = useState([]);
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [showNewAcademicYear, setShowNewAcademicYear] = useState(false);
+  const [editingAcademicYear, setEditingAcademicYear] = useState(null);
+  const [loadingId, setLoadingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const rowsPerPage = 8;
+
+  const fetchAcademicYears = async () => {
+    setIsLoading(true);
     try {
-      setLoadingId(id);
-      await activateAnoLectivo(id);
-      const data = await getAnoLectivo();
-      setAnoLectivo(data.data);
+      await closeFinishedAcademicYears();
+      const response = await getAcademicYears();
+      if (response.success) {
+        setAcademicYears(response.data ?? []);
+      } else {
+        toast.error(response.error || "Erro ao buscar anos lectivos");
+      }
     } catch (error) {
-      console.error("Erro ao alterar status", error);
+      toast.error("Erro ao buscar anos lectivos");
+      console.error("Error fetching academic years:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAcademicYears();
+  }, [showNewAcademicYear, editingAcademicYear]);
+
+  const filteredAcademicYears = academicYears.filter((year) => {
+    if (filterStatus === "ALL") return true;
+    return year.status === filterStatus;
+  });
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAcademicYears.length / rowsPerPage),
+  );
+  const displayedAcademicYears = filteredAcademicYears.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, academicYears]);
+
+  const handleToggleStatus = async (academicYear) => {
+    if (academicYear.status === "CLOSED") {
+      toast.error("Não é possível ativar um ano lectivo encerrado.");
+      return;
+    }
+
+    setLoadingId(academicYear.id);
+    try {
+      const response = await activateAcademicYear(academicYear.id);
+      if (response.success) {
+        toast.success("Ano lectivo ativado com sucesso");
+      } else {
+        toast.error(response.error || "Erro ao ativar ano lectivo");
+      }
+      await fetchAcademicYears();
+    } catch (error) {
+      toast.error("Erro ao ativar ano lectivo");
+      console.error("Error activating academic year:", error);
     } finally {
       setLoadingId(null);
     }
   };
-  useEffect(() => {
-    const fetchAnoLectivo = async () => {
-      try {
-        const data = await getAnoLectivo();
-        setAnoLectivo([...data.data]);
-      } catch (error) {
-        console.error("Erro ao buscar ano lectivo:", error);
-      }
-    };
-    fetchAnoLectivo();
-  }, [addAnoLectivo, editingAno]);
-  return (
-    <div className="mt-10 relative">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0F2C59]">Ano Lectivo</h1>
-          <p className="text-gray-500">
-            {" "}
-            Gestão dos períodos Academicos do Instituto{" "}
-          </p>
-        </div>
-        <button
-          onClick={() => setAddAnoLectivo(true)}
-          className="bg-[#0F2C59] text-white px-4 py-2 rounded-md hover:bg-[#0F2C59]/90 transition-colors cursor-pointer"
-        >
-          Novo Ano Lectivo
-        </button>
-      </div>
-      <table className="w-full border-separate border-spacing-0 rounded-t-2xl rounded-b-2xl overflow-hidden shadow">
-        <thead className="bg-gray-100">
-          <tr className="border-b">
-            <th className="px-6 py-3 text-left text-xs font-light text-gray-500 uppercase tracking-wider">
-              Ano Lectivo
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-light text-gray-500 uppercase tracking-wider">
-              Data Início
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-light text-gray-500 uppercase tracking-wider">
-              Data Fim
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-light text-gray-500 uppercase tracking-wider">
-              Estado
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-light text-gray-500 uppercase tracking-wider">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white rounded-b-4xl ">
-          {anoLectivo.length > 0 ? (
-            anoLectivo.map((ano) => (
-              <tr key={ano.id} className="border-b">
-                <td className="px-6 py-4 text-sm text-gray-500">{ano.nome}</td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {ano.dataInicio}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {ano.dataFim}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  <button
-                    onClick={() => handleToggleStatus(ano.id)}
-                    disabled={loadingId === ano.id}
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      ano.isActive
-                        ? "bg-green-100 text-green-800 hover:bg-green-200"
-                        : "bg-red-100 text-red-800 hover:bg-red-200"
-                    } ${loadingId === ano.id ? "opacity-50 cursor-not-allowed" : "hover:brightness-110"}`}
-                  >
-                    {loadingId === ano.id
-                      ? "Processando..."
-                      : ano.isActive
-                        ? "Ativo"
-                        : "Inativo"}
-                  </button>
-                </td>
-                <td className="px-6 py-4 text-right text-sm font-medium flex items-center justify-end gap-2">
-                  <button
-                    onClick={() => setEditingAno(ano.id)}
-                    className="text-[#0F2C59] cursor-pointer"
-                  >
-                    <FontAwesomeIcon icon={faEdit} />
-                  </button>
-                  <button className="text-red-600 ml-2 cursor-pointer">
-                    <FontAwesomeIcon icon={faTrashCan} />
-                  </button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td
-                colSpan="5"
-                className="px-6 py-4 text-center text-sm text-gray-500"
-              >
-                Nenhum ano lectivo encontrado.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
 
-      {(addAnoLectivo || editingAno) && (
+  const handleEdit = (academicYear) => {
+    if (academicYear.status === "CLOSED") {
+      toast.error("Não é possível editar um ano lectivo encerrado.");
+      return;
+    }
+    setEditingAcademicYear(academicYear);
+    setShowNewAcademicYear(true);
+  };
+
+  const handleClose = async (academicYear) => {
+    if (academicYear.status === "CLOSED") {
+      toast.error("Ano lectivo já está encerrado.");
+      return;
+    }
+
+    setLoadingId(academicYear.id);
+    try {
+      const response = await closeAcademicYear(academicYear.id);
+      if (response.success) {
+        toast.success("Ano lectivo encerrado com sucesso");
+      } else {
+        toast.error(response.error || "Erro ao encerrar ano lectivo");
+      }
+      await fetchAcademicYears();
+    } catch (error) {
+      toast.error("Erro ao encerrar ano lectivo");
+      console.error("Error closing academic year:", error);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  return (
+    <div className="mt-10 relative sm:text-[1rem] text-[0.8rem]">
+      <AcademicYearPageHeader
+        onNewClick={() => {
+          setShowNewAcademicYear(true);
+          setEditingAcademicYear(null);
+        }}
+      />
+
+      <FilterStatusSelect
+        filterStatus={filterStatus}
+        onFilterChange={setFilterStatus}
+      />
+
+      <AcademicYearTable
+        displayedAcademicYears={displayedAcademicYears}
+        loadingId={loadingId}
+        isLoading={isLoading}
+        onToggleStatus={handleToggleStatus}
+        onEdit={handleEdit}
+        onClose={handleClose}
+      />
+
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        itemsCount={filteredAcademicYears.length}
+        onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+        onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+      />
+
+      {(showNewAcademicYear || editingAcademicYear) && (
         <NewAnoLectivo
           setAddAnoLectivo={(value) => {
-            setAddAnoLectivo(value);
-            setEditingAno(null);
+            setShowNewAcademicYear(value);
+            if (!value) setEditingAcademicYear(null);
           }}
-          isEditing={!!editingAno}
-          data={editingAno}
+          isEditing={!!editingAcademicYear}
+          data={editingAcademicYear}
         />
       )}
     </div>

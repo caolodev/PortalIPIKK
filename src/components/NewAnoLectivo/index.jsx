@@ -1,8 +1,15 @@
 "use client";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
-import { createAnoLectivo } from "../../services/anoLectivo";
-export default function NewAnoLectivo({ setAddAnoLectivo }) {
+import {
+  createAnoLectivo,
+  updateAnoLectivo,
+} from "../../services/academicYear";
+export default function NewAnoLectivo({
+  setAddAnoLectivo,
+  isEditing = false,
+  data = null,
+}) {
   const [nome, setNome] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
@@ -15,6 +22,18 @@ export default function NewAnoLectivo({ setAddAnoLectivo }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (isEditing && data) {
+      setNome(data.name ?? "");
+      setDataInicio(data.startDate ?? "");
+      setDataFim(data.endDate ?? "");
+    } else {
+      setNome("");
+      setDataInicio("");
+      setDataFim("");
+    }
+  }, [isEditing, data]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -24,12 +43,27 @@ export default function NewAnoLectivo({ setAddAnoLectivo }) {
       return;
     }
     try {
-      await createAnoLectivo({ nome, dataInicio, dataFim });
+      if (isEditing && data?.id) {
+        const response = await updateAnoLectivo(data.id, {
+          nome,
+          dataInicio,
+          dataFim,
+        });
+        if (!response.success) {
+          throw new Error(response.error || "Erro ao atualizar Ano Lectivo");
+        }
+        toast.success("Ano Lectivo atualizado com sucesso!");
+      } else {
+        const response = await createAnoLectivo({ nome, dataInicio, dataFim });
+        if (!response.success) {
+          throw new Error(response.error || "Erro ao criar Ano Lectivo");
+        }
+        toast.success("Ano Lectivo criado com sucesso!");
+      }
       setAddAnoLectivo(false);
-      toast.success("Ano Lectivo criado com sucesso!");
     } catch (error) {
-      console.error("Erro ao criar Ano Lectivo", error);
-      toast.error(error.message || "Erro ao criar Ano Lectivo");
+      console.error("Erro ao criar/atualizar Ano Lectivo", error);
+      toast.error(error.message || "Erro ao criar/atualizar Ano Lectivo");
     } finally {
       setIsSubmitting(false);
     }

@@ -37,9 +37,6 @@ export default function Login() {
     } catch (err) {
       toast.error(err.message);
     } finally {
-      // O estado de submissão deve ser resetado no 'finally'
-      // embora o redirecionamento desmonte o componente em caso de sucesso.
-      // Isso garante consistência com as outras páginas.
       setSubmitting(false);
     }
   }
@@ -58,7 +55,7 @@ export default function Login() {
     <PageTransition>
       <div className="max-w-115 w-full mx-auto">
         <HeadAuth title={"Portal IPIKK"} description={"Excelência Académica"} />
-        <div className="rounded-2xl shadow-4xl shadow-blue-900/5 bg-white">
+        <div className="rounded-2xl shadow-4xl shadow-gray-400 bg-white shadow-md">
           <HeaderForm
             title={"Entrar no Portal"}
             description={"Aceda ao Portal académico do IPIKK"}
@@ -105,12 +102,12 @@ export default function Login() {
                     {showPassword ? (
                       <FontAwesomeIcon
                         icon={faEyeSlash}
-                        className="w-[18px] h-[18px]"
+                        className="w-4.5 h-4.5"
                       />
                     ) : (
                       <FontAwesomeIcon
                         icon={faEye}
-                        className="w-[18px] h-[18px]"
+                        className="w-4.5 h-4.5"
                       />
                     )}
                   </div>

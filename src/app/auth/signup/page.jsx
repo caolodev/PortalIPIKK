@@ -65,7 +65,7 @@ export default function SignUp() {
     <PageTransition>
       <div className="max-w-140 w-full mx-auto">
         <HeadAuth title={"Criar Conta"} description={"Acesso Institucional"} />
-        <div className="rounded-2xl shadow-4xl shadow-blue-900/5 bg-white">
+        <div className="rounded-2xl shadow-4xl shadow-gray-400 bg-white shadow-md">
           <HeaderForm
             title={"Registo Académico"}
             description={"Acesse o Portal Académico do IPIKK"}
@@ -164,12 +164,12 @@ export default function SignUp() {
                       {showPassword ? (
                         <FontAwesomeIcon
                           icon={faEyeSlash}
-                          className="w-[18px] h-[18px]"
+                          className="w-4.5 h-4.5"
                         />
                       ) : (
                         <FontAwesomeIcon
                           icon={faEye}
-                          className="w-[18px] h-[18px]"
+                          className="w-4.5 h-4.5"
                         />
                       )}
                     </div>
@@ -196,12 +196,12 @@ export default function SignUp() {
                       {showCheckPassword ? (
                         <FontAwesomeIcon
                           icon={faEyeSlash}
-                          className="w-[18px] h-[18px]"
+                          className="w-4.5 h-4.5"
                         />
                       ) : (
                         <FontAwesomeIcon
                           icon={faEye}
-                          className="w-[18px] h-[18px]"
+                          className="w-4.5 h-4.5"
                         />
                       )}
                     </div>
