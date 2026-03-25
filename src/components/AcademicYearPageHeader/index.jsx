@@ -1,3 +1,6 @@
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faCalendar } from "@fortawesome/free-solid-svg-icons";
+
 export default function AcademicYearPageHeader({ onNewClick }) {
   return (
     <div className="flex items-center justify-between mb-5 sm:text-[1rem] text-[0.8rem]">
@@ -11,9 +14,12 @@ export default function AcademicYearPageHeader({ onNewClick }) {
       </div>
       <button
         onClick={onNewClick}
-        className="bg-[#0F2C59] text-white px-4 py-2 rounded-md hover:bg-[#0F2C59]/90 transition-colors cursor-pointer"
+        title="Novo Ano Lectivo"
+        className="flex items-center gap-2 bg-[#0F2C59] text-white px-4 py-3 rounded-lg hover:bg-[#0F2C59]/90 transition-all cursor-pointer shadow-md hover:shadow-lg duration-200"
       >
-        Novo Ano Lectivo
+        <FontAwesomeIcon icon={faCalendar} className="w-4 h-4" />
+        <FontAwesomeIcon icon={faPlus} className="w-3 h-3" />
+        <span className="text-sm font-medium">Ano</span>
       </button>
     </div>
   );

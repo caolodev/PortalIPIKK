@@ -59,6 +59,7 @@ function isPastEndDate(endDate) {
   return end < now;
 }
 
+// Função para fechar anos Lectivos que já passaram da data de fim
 export async function closeFinishedAcademicYears() {
   try {
     const snapshot = await getDocs(academicYearCollection);

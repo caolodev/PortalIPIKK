@@ -1,19 +1,24 @@
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Toaster } from "react-hot-toast";
-import ProgressBar from "../components/ProgressBar";
 
 export const metadata = {
   title: "Portal IPIKK",
   description: "Portal Académico do IPIKK",
 };
+import { Poppins } from "next/font/google";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+});
 export default function RootLayout({ children }) {
   return (
     <html lang="pt">
       <head>
         <link rel="shortcut icon" href="/logo.png" type="image/x-icon" />
       </head>
-      <body className="antialiased bg-white min-h-screen">
+      <body className="antialiased bg-white min-h-screen" style={{ fontFamily: poppins.style.fontFamily }}>
         <Providers>{children}</Providers>
 
         <Toaster
