@@ -6,28 +6,53 @@ import {
   addDoc,
   updateDoc,
   doc,
-  query,
-  where,
   serverTimestamp,
 } from "firebase/firestore";
 
-import { validateAcademicYear } from "./academicYearValidator";
-
 const academicYearCollection = collection(db, "academicYears");
+import { validateAcademicYear } from "./validateNewYear";
+import { getAcademicQuartersByYear } from "./academicQuarter";
+
+// Função auxiliar para determinar o status com base nas datas
+function calculateStatus(startDate, endDate) {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  if (now < start) return "INACTIVE";
+  if (now > end) return "CLOSED";
+  return "ACTIVE";
+}
+
+export default function generateNameYear(startDate, endDate) {
+  const startYear = new Date(startDate).getFullYear();
+  const endYear = new Date(endDate).getFullYear();
+  if (startYear === endYear) {
+    return `${startYear}`;
+  }
+  return `${startYear} - ${endYear}`;
+}
 
 // Função para criar um novo ano Lectivo
 export async function createAcademicYear(data) {
   try {
-    const validation = await validateAcademicYear(data);
+    const snapshot = await getDocs(academicYearCollection);
+
+    const existingYears = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const validation = await validateAcademicYear(data, existingYears);
     if (!validation.success) {
       return { success: false, error: validation.error };
     }
-
     const newAcademicYear = await addDoc(academicYearCollection, {
-      name: validation.value.name,
-      startDate: validation.value.startDate,
-      endDate: validation.value.endDate,
-      status: "INACTIVE",
+      startDate: data.startDate,
+      endDate: data.endDate,
+      name: generateNameYear(data.startDate, data.endDate),
       createdAt: serverTimestamp(),
     });
     return { success: true, id: newAcademicYear.id };
@@ -37,14 +62,19 @@ export async function createAcademicYear(data) {
   }
 }
 
-// Função para pegar todos os anos Lectivos
+// Função para pegar todos os anos Lectivos e atualizar status automaticamente
 export async function getAcademicYears() {
   try {
     const snapshot = await getDocs(academicYearCollection);
-    const academicYears = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const academicYears = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      const status = calculateStatus(data.startDate, data.endDate);
+      return {
+        id: docSnap.id,
+        ...data,
+        status,
+      };
+    });
     return { success: true, data: academicYears };
   } catch (err) {
     console.error("Erro ao obter anos académicos: " + err.message);
@@ -52,86 +82,35 @@ export async function getAcademicYears() {
   }
 }
 
-function isPastEndDate(endDate) {
-  if (!endDate) return false;
-  const now = new Date();
-  const end = new Date(`${endDate}T23:59:59.999Z`);
-  return end < now;
-}
-
-// Função para fechar anos Lectivos que já passaram da data de fim
-export async function closeFinishedAcademicYears() {
-  try {
-    const snapshot = await getDocs(academicYearCollection);
-    const jobs = [];
-
-    snapshot.docs.forEach((docItem) => {
-      const data = docItem.data();
-      if (data.status !== "CLOSED" && isPastEndDate(data.endDate)) {
-        const docRef = doc(db, "academicYears", docItem.id);
-        jobs.push(updateDoc(docRef, { status: "CLOSED" }));
-      }
-    });
-
-    if (jobs.length > 0) await Promise.all(jobs);
-
-    return { success: true, closedCount: jobs.length };
-  } catch (err) {
-    console.error("Erro ao encerrar anos lectivos finalizados: " + err.message);
-    return { success: false, error: err.message };
-  }
-}
-
 //Função para pegar o ano Lectivo activo
 export async function getActiveAcademicYear() {
   try {
-    const q = query(academicYearCollection, where("status", "==", "ACTIVE"));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-      return { success: false, data: null };
+    const snapshot = await getDocs(academicYearCollection);
+    const activeYear = snapshot.docs
+      .map((docSnap) => {
+        const data = docSnap.data();
+        const status = calculateStatus(data.startDate, data.endDate);
+        return {
+          id: docSnap.id,
+          ...data,
+          status,
+        };
+      })
+      .find((year) => year.status === "ACTIVE");
+
+    if (!activeYear) {
+      return { success: true, data: null };
     }
-    const activeYear = snapshot.docs[0];
-    return { success: true, data: { id: activeYear.id, ...activeYear.data() } };
+    return {
+      success: true,
+      data: {
+        id: activeYear.id,
+        ...activeYear,
+        status: calculateStatus(activeYear.startDate, activeYear.endDate),
+      },
+    };
   } catch (err) {
     console.error("Erro ao obter ano académico activo: " + err.message);
-    return { success: false, error: err.message };
-  }
-}
-
-// Função para activar ano Lectivo
-export async function activateAcademicYear(id) {
-  try {
-    const selectedDocRef = doc(db, "academicYears", id);
-    const selectedDocSnap = await getDoc(selectedDocRef);
-
-    if (!selectedDocSnap.exists()) {
-      return { success: false, error: "Ano académico não encontrado." };
-    }
-
-    const selectedYear = selectedDocSnap.data();
-    if (selectedYear.status === "CLOSED") {
-      return {
-        success: false,
-        error: "Não é possível activar um ano académico encerrado.",
-      };
-    }
-
-    // Primeiro, desactivar o ano Lectivo actualmente activo
-    const q = query(academicYearCollection, where("status", "==", "ACTIVE"));
-    const snapshot = await getDocs(q);
-
-    const updates = snapshot.docs.map((docItem) => {
-      const docRef = doc(db, "academicYears", docItem.id);
-      return updateDoc(docRef, { status: "INACTIVE" });
-    });
-
-    await Promise.all(updates);
-
-    // Agora, activar o ano Lectivo seleccionado
-    await updateDoc(selectedDocRef, { status: "ACTIVE" });
-    return { success: true };
-  } catch (err) {
-    console.error("Erro ao activar ano académico: " + err.message);
     return { success: false, error: err.message };
   }
 }
@@ -147,79 +126,44 @@ export async function updateAcademicYear(id, data) {
     }
 
     const currentYear = docSnap.data();
-    if (currentYear.status === "CLOSED") {
+    const currentStatus = calculateStatus(
+      currentYear.startDate,
+      currentYear.endDate,
+    );
+    if (currentStatus === "CLOSED") {
       return {
         success: false,
         error: "Não é possível editar um ano académico encerrado.",
       };
     }
 
-    const validation = await validateAcademicYear(data, id);
+    // Buscar Trimestres para validar seu vinculo
+    const quartersRes = await getAcademicQuartersByYear(id);
+    const hasQuarters = quartersRes.success && quartersRes.data.length > 0;
+
+    const snapshot = await getDocs(academicYearCollection);
+    const existingYears = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const validation = await validateAcademicYear(data, existingYears, {
+      currentId: id,
+      hasQuarters: hasQuarters,
+    });
+
     if (!validation.success) {
       return { success: false, error: validation.error };
     }
-
     // Se ano está ACTIVE, mantemos regra de não quebrar consistência de datas (mesma validação já aplica)
     await updateDoc(docRef, {
-      name: validation.value.name,
-      startDate: validation.value.startDate,
-      endDate: validation.value.endDate,
+      name: generateNameYear(data.startDate, data.endDate),
+      startDate: data.startDate,
+      endDate: data.endDate,
     });
     return { success: true };
   } catch (err) {
     console.error("Erro ao actualizar ano académico: " + err.message);
     return { success: false, error: err.message };
   }
-}
-
-// Função para Encerrar um ano Lectivo
-export async function closeAcademicYear(id) {
-  try {
-    const docRef = doc(db, "academicYears", id);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return { success: false, error: "Ano académico não encontrado." };
-    }
-
-    const currentYear = docSnap.data();
-    if (currentYear.status === "CLOSED") {
-      return { success: false, error: "Ano académico já está encerrado." };
-    }
-
-    await updateDoc(docRef, { status: "CLOSED" });
-    return { success: true };
-  } catch (err) {
-    console.error("Erro ao encerrar ano académico: " + err.message);
-    return { success: false, error: err.message };
-  }
-}
-
-// Wrappers para nomes existentes no frontend
-export async function createAnoLectivo(data) {
-  return createAcademicYear({
-    name: data.name ?? data.nome,
-    startDate: data.startDate ?? data.dataInicio,
-    endDate: data.endDate ?? data.dataFim,
-  });
-}
-
-export async function getAnoLectivo() {
-  return getAcademicYears();
-}
-
-export async function activateAnoLectivo(id) {
-  return activateAcademicYear(id);
-}
-
-export async function updateAnoLectivo(id, data) {
-  return updateAcademicYear(id, {
-    name: data.name ?? data.nome,
-    startDate: data.startDate ?? data.dataInicio,
-    endDate: data.endDate ?? data.dataFim,
-  });
-}
-
-export async function closeAnoLectivo(id) {
-  return closeAcademicYear(id);
 }

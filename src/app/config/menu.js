@@ -15,11 +15,6 @@ export const dashboardMenu = {
       icon: faGraduationCap,
     },
     {
-      label: "Turmas",
-      path: "/dashboard/director/turmas",
-      icon: faChalkboardUser,
-    },
-    {
       label: "Relatórios",
       path: "/dashboard/director/relatorios",
       icon: faFileLines,

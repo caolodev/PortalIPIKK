@@ -1,33 +1,31 @@
 import AcademicYearRow from "../AcademicYearRow";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCalendar } from "@fortawesome/free-regular-svg-icons";
 
 export default function AcademicYearTable({
   displayedAcademicYears,
-  loadingId,
   isLoading,
-  onToggleStatus,
   onEdit,
-  onClose,
 }) {
   return (
     <div className="overflow-x-auto shadow rounded-2xl">
       <table className="w-full border-separate border-spacing-0 min-w-max">
         <thead className="bg-gray-100">
           <tr className="border-b">
-            <th className="px-3 md:px-6 py-3 text-left text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-4 text-left text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
               Ano Lectivo
             </th>
-            <th className="px-3 md:px-6 py-3 text-left text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-4 text-left text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
               Data Início
             </th>
-            <th className="px-3 md:px-6 py-3 text-left text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-4  text-left text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
               Data Fim
             </th>
-            <th className="px-3 md:px-6 py-3 text-left text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-4 text-left text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
               Estado
             </th>
-            <th className="px-3 md:px-6 py-3 text-right text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
+            <th className="px-3 md:px-6 py-4 text-right text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
               Ações
             </th>
           </tr>
@@ -54,10 +52,7 @@ export default function AcademicYearTable({
               <AcademicYearRow
                 key={yearItem.id}
                 yearItem={yearItem}
-                loadingId={loadingId}
-                onToggleStatus={onToggleStatus}
                 onEdit={onEdit}
-                onClose={onClose}
               />
             ))
           ) : (
@@ -67,7 +62,7 @@ export default function AcademicYearTable({
                 className="px-6 py-8 text-center text-sm text-gray-500"
               >
                 <div className="flex flex-col items-center gap-2">
-                  <span>📋</span>
+                  <FontAwesomeIcon icon={faCalendar} />
                   <span>Nenhum ano lectivo encontrado.</span>
                 </div>
               </td>

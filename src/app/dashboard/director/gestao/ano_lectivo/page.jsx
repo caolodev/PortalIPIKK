@@ -1,16 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import {
-  getAcademicYears,
-  activateAcademicYear,
-  closeAcademicYear,
-  closeFinishedAcademicYears,
-} from "../../../../../services/academicYear";
-import AcademicYearPageHeader from "../../../../../components/AcademicYearPageHeader";
-import FilterStatusSelect from "../../../../../components/FilterStatusSelect";
-import AcademicYearTable from "../../../../../components/AcademicYearTable";
-import PaginationControls from "../../../../../components/PaginationControls";
-import NewAnoLectivo from "../../../../../components/NewAnoLectivo";
+import { getAcademicYears } from "@/services/academicYear";
+import PageHeader from "@/components/PageHeader";
+import FilterStatusSelect from "@/components/FilterStatusSelect";
+import AcademicYearTable from "@/components/AcademicYearTable";
+import PaginationControls from "@/components/PaginationControls";
+import NewAnoLectivo from "@/components/NewAnoLectivo";
 import toast from "react-hot-toast";
 
 export default function AcademicYearPage() {
@@ -18,15 +13,12 @@ export default function AcademicYearPage() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [showNewAcademicYear, setShowNewAcademicYear] = useState(false);
   const [editingAcademicYear, setEditingAcademicYear] = useState(null);
-  const [loadingId, setLoadingId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const rowsPerPage = 8;
-
   const fetchAcademicYears = async () => {
     setIsLoading(true);
     try {
-      await closeFinishedAcademicYears();
       const response = await getAcademicYears();
       if (response.success) {
         setAcademicYears(response.data ?? []);
@@ -63,29 +55,6 @@ export default function AcademicYearPage() {
     setCurrentPage(1);
   }, [filterStatus, academicYears]);
 
-  const handleToggleStatus = async (academicYear) => {
-    if (academicYear.status === "CLOSED") {
-      toast.error("Não é possível ativar um ano lectivo encerrado.");
-      return;
-    }
-
-    setLoadingId(academicYear.id);
-    try {
-      const response = await activateAcademicYear(academicYear.id);
-      if (response.success) {
-        toast.success("Ano lectivo ativado com sucesso");
-      } else {
-        toast.error(response.error || "Erro ao ativar ano lectivo");
-      }
-      await fetchAcademicYears();
-    } catch (error) {
-      toast.error("Erro ao ativar ano lectivo");
-      console.error("Error activating academic year:", error);
-    } finally {
-      setLoadingId(null);
-    }
-  };
-
   const handleEdit = (academicYear) => {
     if (academicYear.status === "CLOSED") {
       toast.error("Não é possível editar um ano lectivo encerrado.");
@@ -95,36 +64,17 @@ export default function AcademicYearPage() {
     setShowNewAcademicYear(true);
   };
 
-  const handleClose = async (academicYear) => {
-    if (academicYear.status === "CLOSED") {
-      toast.error("Ano lectivo já está encerrado.");
-      return;
-    }
-
-    setLoadingId(academicYear.id);
-    try {
-      const response = await closeAcademicYear(academicYear.id);
-      if (response.success) {
-        toast.success("Ano lectivo encerrado com sucesso");
-      } else {
-        toast.error(response.error || "Erro ao encerrar ano lectivo");
-      }
-      await fetchAcademicYears();
-    } catch (error) {
-      toast.error("Erro ao encerrar ano lectivo");
-      console.error("Error closing academic year:", error);
-    } finally {
-      setLoadingId(null);
-    }
-  };
-
   return (
     <div className="mt-10 relative sm:text-[1rem] text-[0.8rem]">
-      <AcademicYearPageHeader
-        onNewClick={() => {
+      <PageHeader
+        title="Gestão de Ano Lectivo"
+        description="Gestão dos períodos académicos do Instituto"
+        buttonText="Novo Ano"
+        onButtonClick={() => {
           setShowNewAcademicYear(true);
           setEditingAcademicYear(null);
         }}
+        buttonTitle="Novo Ano Lectivo"
       />
 
       <FilterStatusSelect
@@ -134,11 +84,8 @@ export default function AcademicYearPage() {
 
       <AcademicYearTable
         displayedAcademicYears={displayedAcademicYears}
-        loadingId={loadingId}
-        isLoading={isLoading}
-        onToggleStatus={handleToggleStatus}
         onEdit={handleEdit}
-        onClose={handleClose}
+        isLoading={isLoading}
       />
 
       <PaginationControls
