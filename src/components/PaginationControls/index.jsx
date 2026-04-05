@@ -10,11 +10,12 @@ export default function PaginationControls({
   itemsCount,
   onPrevious,
   onNext,
+  itemName = "itens",
 }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mt-4">
       <span className="text-xs md:text-sm text-gray-600 text-center md:text-left">
-        Página {currentPage} de {totalPages} ({itemsCount} anos)
+        Página {currentPage} de {totalPages} ({itemsCount} {itemName})
       </span>
       <div className="flex items-center gap-2 justify-center md:justify-end">
         <button

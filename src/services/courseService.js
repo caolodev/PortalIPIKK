@@ -6,54 +6,55 @@ import {
   where,
   doc,
   updateDoc,
-  getDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getActiveCoordinators } from "./courseRoleService";
 
 const courseCollection = collection(db, "courses");
 const academicYearCollection = collection(db, "academicYears");
 const usersCollection = collection(db, "Users");
 
-// Função para verificar se há um ano lectivo ativo
-async function hasActiveAcademicYear() {
-  const q = query(academicYearCollection);
-  const snapshot = await getDocs(q);
-
+// Auxiliar: Verifica se existe algum ano lectivo a decorrer hoje
+export async function hasActiveAcademicYear() {
+  const snapshot = await getDocs(academicYearCollection);
   const now = new Date();
 
   return snapshot.docs.some((doc) => {
     const data = doc.data();
-    return new Date(data.startDate) <= now && new Date(data.endDate) >= now;
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    return now >= start && now <= end;
   });
 }
 
-// Função para verificar se o código do curso é único
 async function isCodeUnique(code, currentId = null) {
-  const q = query(courseCollection, where("code", "==", code));
+  const q = query(courseCollection, where("code", "==", code.toUpperCase()));
   const snapshot = await getDocs(q);
-
   return !snapshot.docs.some((doc) => doc.id !== currentId);
 }
 
-// Função para criar um novo curso
+async function isUniqueName(name, currentId = null) {
+  const q = query(courseCollection, where("name", "==", name));
+  const snapshot = await getDocs(q);
+  return !snapshot.docs.some((doc) => doc.id !== currentId);
+}
+
 export async function createCourse({ name, code }) {
   try {
-    if (!name || !code) {
-      return { success: false, error: "Nome e código são obrigatórios" };
-    }
-
-    // Verificar se há um ano lectivo ativo
     if (await hasActiveAcademicYear()) {
       return {
         success: false,
-        error: "Não pode criar cursos durante ano lectivo ativo",
+        error: "Não pode criar cursos durante um ano lectivo activo.",
       };
     }
 
-    const unique = await isCodeUnique(code.toUpperCase());
+    if (!(await isCodeUnique(code))) {
+      return { success: false, error: "Este código de curso já está em uso." };
+    }
 
-    if (!unique) {
-      return { success: false, error: "Código já existe" };
+    if (!(await isUniqueName(name))) {
+      return { success: false, error: "Este nome de curso já está em uso." };
     }
 
     const docRef = await addDoc(courseCollection, {
@@ -69,64 +70,101 @@ export async function createCourse({ name, code }) {
   }
 }
 
-// Função para obter professores cadastrados como usuários
+export async function getCourses() {
+  try {
+    const [coursesSnapshot, coordinatorsResult, hasActiveYear] =
+      await Promise.all([
+        getDocs(courseCollection),
+        getActiveCoordinators(),
+        hasActiveAcademicYear(),
+      ]);
+
+    const courses = coursesSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Get users for coordinators
+    const usersSnapshot = await getDocs(usersCollection);
+    const users = usersSnapshot.docs.reduce((acc, doc) => {
+      acc[doc.id] = doc.data();
+      return acc;
+    }, {});
+
+    // Map coordinators to courses
+    const coordinatorMap = coordinatorsResult.success
+      ? coordinatorsResult.data.reduce((acc, c) => {
+          acc[c.courseId] = {
+            name:
+              users[c.userId]?.name ||
+              users[c.userId]?.nomeCompleto ||
+              "Unknown",
+            since: new Date(c.startDate).getFullYear(),
+          };
+          return acc;
+        }, {})
+      : {};
+
+    // Calculate active state:
+    // - Se há ano lectivo activo: curso é "activo" apenas se tem coordenador
+    // - Se não há ano lectivo activo: sistema em modo configuração, todos os cursos são "inactivos"
+    const coursesWithCoordinators = courses.map((course) => ({
+      ...course,
+      coordinator: coordinatorMap[course.id] || null,
+      active: hasActiveYear && !!coordinatorMap[course.id], // Active only if academic year is active AND has coordinator
+      academicYearActive: hasActiveYear,
+    }));
+
+    return {
+      success: true,
+      data: coursesWithCoordinators,
+      academicYearActive: hasActiveYear,
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getInsights() {
+  try {
+    const result = await getCourses();
+    if (!result.success) return result;
+
+    const data = result.data;
+    const hasActiveYear = result.academicYearActive;
+
+    const totalCourses = data.length;
+    const coursesWithCoordinators = data.filter(
+      (course) => course.coordinator,
+    ).length;
+    const coursesWithoutCoordinators = totalCourses - coursesWithCoordinators;
+    // Active = has coordinator AND academic year is active
+    const courseActive = hasActiveYear ? coursesWithCoordinators : 0;
+    const courseInactive = hasActiveYear
+      ? coursesWithoutCoordinators
+      : totalCourses;
+    return {
+      success: true,
+      data: {
+        totalCourses,
+        courseActive,
+        courseInactive,
+        coursesWithCoordinators,
+        coursesWithoutCoordinators,
+        academicYearActive: hasActiveYear,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getProfessors() {
   try {
     const q = query(usersCollection, where("role", "==", "PROFESSOR"));
     const snapshot = await getDocs(q);
-
-    const professors = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    return { success: true, data: professors };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
-
-// Função para atualizar um curso
-export async function updateCourse(id, { name, code }) {
-  try {
-    if (await hasActiveAcademicYear()) {
-      return {
-        success: false,
-        error: "Não pode editar cursos durante ano lectivo ativo",
-      };
-    }
-
-    const unique = await isCodeUnique(code.toUpperCase(), id);
-
-    if (!unique) {
-      return { success: false, error: "Código já existe" };
-    }
-
-    const docRef = doc(db, "courses", id);
-
-    await updateDoc(docRef, {
-      name,
-      code: code.toUpperCase(),
-      updatedAt: new Date().toISOString(),
-    });
-
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
-
-// Função para obter todos os cursos
-export async function getCourses() {
-  try {
-    const snapshot = await getDocs(courseCollection);
-
-    const courses = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    return { success: true, data: courses };
+    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return { success: true, data };
   } catch (error) {
     return { success: false, error: error.message };
   }

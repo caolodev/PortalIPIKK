@@ -89,4 +89,7 @@ body {
   .icon-right {
     @apply absolute right-3 top-4 text-2xl text-gray-400 group-focus-within:text-[#0F2C59] transition-colors;
   }
+  .insights-course {
+    @apply bg-white rounded-lg border border-gray-100 p-3 shadow-sm;
+  }
 }
