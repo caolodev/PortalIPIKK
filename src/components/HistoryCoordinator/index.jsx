@@ -68,7 +68,7 @@ export default function HistoryCoordinator({ setIsOpen, course }) {
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all "
           >
             <FontAwesomeIcon icon={faXmark} className="w-3.5 h-3.5" />
           </button>
@@ -101,9 +101,21 @@ export default function HistoryCoordinator({ setIsOpen, course }) {
                       {item.userName}
                     </p>
                     <p className="text-xs text-gray-500">
-                      De {new Date(item.startDate).toLocaleDateString()}
+                      De{" "}
+                      {new Date(item.startDate).toLocaleDateString("pt-PT", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
                       {item.endDate
-                        ? ` até ${new Date(item.endDate).toLocaleDateString()}`
+                        ? ` até ${new Date(item.endDate).toLocaleDateString(
+                            "pt-PT",
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            },
+                          )}`
                         : " (atual)"}
                     </p>
                   </div>

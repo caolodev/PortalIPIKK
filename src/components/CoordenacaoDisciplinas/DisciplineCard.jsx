@@ -20,7 +20,8 @@ export default function DisciplineCard({ discipline }) {
                 "Disciplina não encontrada"}
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              {subject.description || `${typeLabel === "Geral" ? "Geral para todos os cursos" : "Específica do curso(s) " + subject.cursos?.join(", ") || "Sem descrição disponível"}`}
+              {subject.description ||
+                `${typeLabel === "Geral" ? "Geral para todos os cursos" : "Específica do curso(s) " + subject.cursos?.join(", ") || "Sem descrição disponível"}`}
             </p>
           </div>
           <span
@@ -33,11 +34,6 @@ export default function DisciplineCard({ discipline }) {
             {subject.sigla || "N/A"}
           </span>
         </div>
-      </div>
-      <div className="border-t border-slate-100 bg-slate-50 px-5 py-3">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-          {isGeneral ? "Geral" : "Específica"}
-        </p>
       </div>
     </div>
   );

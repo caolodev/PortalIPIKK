@@ -1,7 +1,12 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faSpinner, faTimes, faCheck } from "@fortawesome/free-solid-svg-icons";
+import {
+  faSearch,
+  faSpinner,
+  faTimes,
+  faCheck,
+} from "@fortawesome/free-solid-svg-icons";
 
 function getInitials(name) {
   return name
@@ -24,6 +29,7 @@ export default function TeacherAssignmentModal({
   loading,
   subjectName,
   currentTeacherName,
+  isCurrentTeacherDirector,
 }) {
   if (!open) return null;
 
@@ -31,15 +37,24 @@ export default function TeacherAssignmentModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
-
         {/* Header */}
         <div className="border-b border-slate-100 px-6 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="mt-1.5 text-lg font-bold text-slate-900">{subjectName}</h2>
+              <h2 className="mt-1.5 text-lg font-bold text-slate-900">
+                {subjectName}
+              </h2>
               <p className="mt-0.5 text-sm text-slate-400">
-                {currentTeacherName ? `Atual: ${currentTeacherName}` : "Sem professor vinculado"}
+                {currentTeacherName
+                  ? `Atual: ${currentTeacherName}`
+                  : "Sem professor vinculado"}
               </p>
+              {isCurrentTeacherDirector && (
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  Atenção: esta disciplina está atualmente atribuída ao diretor
+                  de turma. Alterar o professor irá substituir essa atribuição.
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -70,14 +85,15 @@ export default function TeacherAssignmentModal({
         </div>
 
         {/* Professor list */}
-        <div className="max-h-[300px] space-y-2 overflow-y-auto px-6 py-4">
+        <div className="max-h-75 space-y-2 overflow-y-auto px-6 py-4">
           {professors.length === 0 ? (
             <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm text-slate-400">
               Nenhum professor encontrado.
             </div>
           ) : (
             professors.map((professor) => {
-              const displayName = professor.nomeCompleto || professor.name || "Sem Nome";
+              const displayName =
+                professor.nomeCompleto || professor.name || "Sem Nome";
               const isSelected = selectedProfessor?.id === professor.id;
               return (
                 <button
@@ -94,12 +110,17 @@ export default function TeacherAssignmentModal({
                     {getInitials(displayName)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {displayName}
+                    </p>
                     <p className="text-xs text-slate-400">Professor</p>
                   </div>
                   {isSelected && (
                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0f2c59]">
-                      <FontAwesomeIcon icon={faCheck} className="text-[10px] text-white" />
+                      <FontAwesomeIcon
+                        icon={faCheck}
+                        className="text-[10px] text-white"
+                      />
                     </div>
                   )}
                 </button>

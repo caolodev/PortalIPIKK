@@ -2,9 +2,18 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit } from "@fortawesome/free-regular-svg-icons";
 
 const statusConfig = {
-  ACTIVE:  { label: "Activo",    classes: "bg-green-100 text-green-700 border border-green-200" },
-  CLOSED:  { label: "Encerrado", classes: "bg-red-100 text-red-600 border border-red-200" },
-  INACTIVE: { label: "Inactivo",  classes: "bg-yellow-100 text-yellow-700 border border-yellow-200" },
+  ACTIVE: {
+    label: "Activo",
+    classes: "bg-green-100 text-green-700 border border-green-200",
+  },
+  CLOSED: {
+    label: "Encerrado",
+    classes: "bg-red-100 text-red-600 border border-red-200",
+  },
+  INACTIVE: {
+    label: "Inactivo",
+    classes: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+  },
 };
 
 export default function AcademicYearRow({ yearItem, onEdit }) {
@@ -26,7 +35,9 @@ export default function AcademicYearRow({ yearItem, onEdit }) {
         {yearItem.endDate}
       </td>
       <td className="px-3 md:px-6 py-4">
-        <span className={`px-2.5 py-1 rounded-md text-[11px] font-medium tracking-wide ${status.classes}`}>
+        <span
+          className={`px-2.5 py-1 rounded-md text-[11px] font-medium tracking-wide ${status.classes}`}
+        >
           {status.label}
         </span>
       </td>
@@ -37,9 +48,10 @@ export default function AcademicYearRow({ yearItem, onEdit }) {
             disabled={isClosed}
             title="Editar"
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150
-              ${isClosed
-                ? "text-gray-300 cursor-not-allowed"
-                : "text-gray-400 hover:text-[#0F2C59] hover:bg-[#0F2C59]/8 cursor-pointer"
+              ${
+                isClosed
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "text-gray-400 hover:text-[#0F2C59] hover:bg-[#0F2C59]/8 "
               }`}
           >
             <FontAwesomeIcon icon={faEdit} className="w-3.5 h-3.5" />

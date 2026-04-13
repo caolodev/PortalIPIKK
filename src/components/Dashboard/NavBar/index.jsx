@@ -66,7 +66,7 @@ export default function NavBar({
 
       <div className="relative" ref={menuRef}>
         <div
-          className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-transparent hover:border-gray-200 font-bold cursor-pointer bg-[#0F2C59] text-white transition-all hover:shadow-md active:scale-95"
+          className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-transparent hover:border-gray-200 font-bold  bg-[#0F2C59] text-white transition-all hover:shadow-md active:scale-95"
           onClick={() => setShowDetails(!showDetails)}
         >
           {shortName}

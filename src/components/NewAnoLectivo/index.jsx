@@ -2,18 +2,27 @@
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faXmark,faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faXmark, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faCalendar } from "@fortawesome/free-regular-svg-icons";
-import { createAcademicYear, updateAcademicYear } from "@/services/academicYear";
+import {
+  createAcademicYear,
+  updateAcademicYear,
+} from "@/services/academicYear";
 
-export default function NewAnoLectivo({ setAddAnoLectivo, isEditing = false, data = null }) {
+export default function NewAnoLectivo({
+  setAddAnoLectivo,
+  isEditing = false,
+  data = null,
+}) {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = "unset"; };
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, []);
 
   useEffect(() => {
@@ -41,12 +50,20 @@ export default function NewAnoLectivo({ setAddAnoLectivo, isEditing = false, dat
     }
     try {
       if (isEditing && data?.id) {
-        const response = await updateAcademicYear(data.id, { startDate: dataInicio, endDate: dataFim });
-        if (!response.success) throw new Error(response.error || "Erro ao atualizar Ano Lectivo");
+        const response = await updateAcademicYear(data.id, {
+          startDate: dataInicio,
+          endDate: dataFim,
+        });
+        if (!response.success)
+          throw new Error(response.error || "Erro ao atualizar Ano Lectivo");
         toast.success("Ano Lectivo atualizado com sucesso!");
       } else {
-        const response = await createAcademicYear({ startDate: dataInicio, endDate: dataFim });
-        if (!response.success) throw new Error(response.error || "Erro ao criar Ano Lectivo");
+        const response = await createAcademicYear({
+          startDate: dataInicio,
+          endDate: dataFim,
+        });
+        if (!response.success)
+          throw new Error(response.error || "Erro ao criar Ano Lectivo");
         toast.success("Ano Lectivo criado com sucesso!");
       }
       setAddAnoLectivo(false);
@@ -69,20 +86,25 @@ export default function NewAnoLectivo({ setAddAnoLectivo, isEditing = false, dat
         <div className="flex items-center justify-between px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#0F2C59]/8 flex items-center justify-center">
-              <FontAwesomeIcon icon={faCalendar} className="w-3.5 h-3.5 text-[#0F2C59]" />
+              <FontAwesomeIcon
+                icon={faCalendar}
+                className="w-3.5 h-3.5 text-[#0F2C59]"
+              />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-[#0F2C59] leading-tight">
                 {isEditing ? "Editar Ano Lectivo" : "Novo Ano Lectivo"}
               </h2>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {isEditing ? "Atualize os dados do período" : "Defina o novo período académico"}
+                {isEditing
+                  ? "Atualize os dados do período"
+                  : "Defina o novo período académico"}
               </p>
             </div>
           </div>
           <button
             onClick={() => setAddAnoLectivo(false)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all "
           >
             <FontAwesomeIcon icon={faXmark} className="w-3.5 h-3.5" />
           </button>
@@ -91,9 +113,15 @@ export default function NewAnoLectivo({ setAddAnoLectivo, isEditing = false, dat
         <div className="h-px bg-gray-100" />
 
         {/* Form */}
-        <form className="px-6 py-5 grid grid-cols-2 gap-4" onSubmit={handleSubmit}>
+        <form
+          className="px-6 py-5 grid grid-cols-2 gap-4"
+          onSubmit={handleSubmit}
+        >
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="dataInicio" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <label
+              htmlFor="dataInicio"
+              className="text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Data de Início
             </label>
             <input
@@ -107,7 +135,10 @@ export default function NewAnoLectivo({ setAddAnoLectivo, isEditing = false, dat
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="dataFim" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <label
+              htmlFor="dataFim"
+              className="text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               Data de Fim
             </label>
             <input
@@ -124,18 +155,25 @@ export default function NewAnoLectivo({ setAddAnoLectivo, isEditing = false, dat
             <button
               type="button"
               onClick={() => setAddAnoLectivo(false)}
-              className="text-sm text-gray-500 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              className="text-sm text-gray-500 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors "
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center justify-center min-w-[22.5] bg-[#0F2C59] text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-[#0F2C59]/90 transition-colors cursor-pointer disabled:opacity-70"
+              className="flex items-center justify-center min-w-[22.5] bg-[#0F2C59] text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-[#0F2C59]/90 transition-colors  disabled:opacity-70"
             >
               {isSubmitting ? (
-                <FontAwesomeIcon icon={faSpinner} className="animate-spin w-4 h-4" />
-              ) : isEditing ? "Atualizar" : "Criar"}
+                <FontAwesomeIcon
+                  icon={faSpinner}
+                  className="animate-spin w-4 h-4"
+                />
+              ) : isEditing ? (
+                "Atualizar"
+              ) : (
+                "Criar"
+              )}
             </button>
           </div>
         </form>

@@ -14,7 +14,7 @@ export default function UserMenu({ firstName, lastName, role, items = [] }) {
         {items.map((item, index) => {
           const ItemContent = (
             <div
-              className={`px-5 flex items-center gap-3 text-sm font-medium leading-none py-2.5 cursor-pointer transition-colors ${
+              className={`px-5 flex items-center gap-3 text-sm font-medium leading-none py-2.5  transition-colors ${
                 item.variant === "danger"
                   ? "text-red-500 hover:bg-red-50"
                   : "hover:bg-[#0F2C59] hover:text-white"

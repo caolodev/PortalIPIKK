@@ -124,9 +124,11 @@ export default function DisciplinasPage() {
 
     async function refreshMatrix() {
       setRefreshing(true);
+      setMatrixSubjects([]);
       const matrixRes = await getCourseMatrix(course.id, selectedClass);
       if (!matrixRes.success) {
         toast.error(matrixRes.error || "Erro ao atualizar matriz.");
+        setMatrixSubjects([]);
       } else {
         setMatrixSubjects(matrixRes.data);
       }
@@ -283,7 +285,14 @@ export default function DisciplinasPage() {
               </div>
             )}
             <div className="grid gap-5 xl:grid-cols-3 lg:grid-cols-2 sm:grid-cols-1">
-              {matrixSubjects.length === 0 ? (
+              {refreshing ? (
+                Array.from({ length: 6 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-44 rounded-4xl border border-slate-200 bg-white p-5 shadow-sm animate-pulse"
+                  />
+                ))
+              ) : matrixSubjects.length === 0 ? (
                 <div className="col-span-full rounded-4xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-600">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-500">
                     <FontAwesomeIcon icon={faBookOpen} className="text-2xl" />

@@ -39,7 +39,11 @@ export default function SignUp() {
       toast.error("As senhas não coincidem");
       return;
     }
-    if (firstName.trim() === "" || lastName.trim() === "" || process.trim() === "") {
+    if (
+      firstName.trim() === "" ||
+      lastName.trim() === "" ||
+      process.trim() === ""
+    ) {
       toast.error("Por favor, preencha todos os campos obrigatórios");
       return;
     }
@@ -163,7 +167,7 @@ export default function SignUp() {
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <div
-                      className="icon-right cursor-pointer"
+                      className="icon-right "
                       onClick={(e) => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -172,10 +176,7 @@ export default function SignUp() {
                           className="w-4.5 h-4.5"
                         />
                       ) : (
-                        <FontAwesomeIcon
-                          icon={faEye}
-                          className="w-4.5 h-4.5"
-                        />
+                        <FontAwesomeIcon icon={faEye} className="w-4.5 h-4.5" />
                       )}
                     </div>
                   </div>
@@ -195,7 +196,7 @@ export default function SignUp() {
                       className="inputs"
                     />
                     <div
-                      className="icon-right cursor-pointer"
+                      className="icon-right "
                       onClick={(e) => setCheckShowPassword(!showCheckPassword)}
                     >
                       {showCheckPassword ? (
@@ -204,10 +205,7 @@ export default function SignUp() {
                           className="w-4.5 h-4.5"
                         />
                       ) : (
-                        <FontAwesomeIcon
-                          icon={faEye}
-                          className="w-4.5 h-4.5"
-                        />
+                        <FontAwesomeIcon icon={faEye} className="w-4.5 h-4.5" />
                       )}
                     </div>
                   </div>

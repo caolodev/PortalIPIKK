@@ -247,15 +247,6 @@ export default function ProfessorAssignmentsPage() {
   };
 
   const handleOpenAssignment = (row) => {
-    if (
-      row.activeTeacher?.teacherId === selectedTurma?.director?.userId
-    ) {
-      toast.error(
-        "Este professor é diretor de turma. Desvincule-o da direção primeiro para alterar a atribuição.",
-      );
-      return;
-    }
-
     setCurrentRow(row);
     setSelectedProfessor(
       row.activeTeacher
@@ -449,7 +440,8 @@ export default function ProfessorAssignmentsPage() {
                       <p
                         className={`mt-2 text-xs font-medium ${isSelected ? "text-blue-200" : "text-slate-400"}`}
                       >
-                        {counts.assigned} de {counts.total} disciplinas atribuídas
+                        {counts.assigned} de {counts.total} disciplinas
+                        atribuídas
                       </p>
                     )}
                   </button>
@@ -503,6 +495,10 @@ export default function ProfessorAssignmentsPage() {
         loading={saving}
         subjectName={currentRow?.subject.name || "Disciplina"}
         currentTeacherName={currentRow?.activeTeacher?.teacherName || null}
+        isCurrentTeacherDirector={
+          !!currentRow?.activeTeacher?.teacherId &&
+          currentRow.activeTeacher.teacherId === selectedTurma?.director?.userId
+        }
       />
     </div>
   );

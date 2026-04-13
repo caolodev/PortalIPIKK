@@ -42,7 +42,7 @@ export default function Header({
           </div>
         </Link>
         <div
-          className="sm:hidden flex transition-discrete flex-col gap-1 cursor-pointer w-6 h-6 items-center justify-center relative"
+          className="sm:hidden flex transition-discrete flex-col gap-1  w-6 h-6 items-center justify-center relative"
           style={{ gap: mobile && "0" }}
           onClick={() => setMobile(!mobile)}
         >
@@ -122,7 +122,7 @@ export default function Header({
                 ) : (
                   <div className="relative" ref={menuRef}>
                     <div
-                      className="w-10 h-10 flex items-center justify-center rounded-full bg-[#0F2C59] cursor-pointer hover:shadow-md transition-all active:scale-95"
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-[#0F2C59]  hover:shadow-md transition-all active:scale-95"
                       onClick={() => setIsOpen(!isOpen)}
                     >
                       <span className="text-white font-bold text-sm">

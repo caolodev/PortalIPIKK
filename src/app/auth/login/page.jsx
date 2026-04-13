@@ -96,7 +96,7 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
                   <div
-                    className="icon-right cursor-pointer"
+                    className="icon-right "
                     onClick={(e) => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -105,10 +105,7 @@ export default function Login() {
                         className="w-4.5 h-4.5"
                       />
                     ) : (
-                      <FontAwesomeIcon
-                        icon={faEye}
-                        className="w-4.5 h-4.5"
-                      />
+                      <FontAwesomeIcon icon={faEye} className="w-4.5 h-4.5" />
                     )}
                   </div>
                 </div>

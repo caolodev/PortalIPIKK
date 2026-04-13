@@ -72,13 +72,21 @@ export default function AcademicQuarterForm({
     }
   };
 
-  const formatDateForInput =  (dateStr) => {
+  const formatDateForInput = (dateStr) => {
     const date = new Date(dateStr);
     const year = date.getFullYear();
-    const month = date.toLocaleDateString("pt-PT", { month: "short" }).charAt(0).toUpperCase() + date.toLocaleDateString("pt-PT", { month: "short" }).slice(1).replace(".", "");
+    const month =
+      date
+        .toLocaleDateString("pt-PT", { month: "short" })
+        .charAt(0)
+        .toUpperCase() +
+      date
+        .toLocaleDateString("pt-PT", { month: "short" })
+        .slice(1)
+        .replace(".", "");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
-  }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -110,7 +118,7 @@ export default function AcademicQuarterForm({
           </div>
           <button
             onClick={() => setShowFormQuarter(false)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all "
           >
             <FontAwesomeIcon icon={faXmark} className="w-3.5 h-3.5" />
           </button>
@@ -121,7 +129,12 @@ export default function AcademicQuarterForm({
         {activeYearData && (
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
             <p className="text-xs text-gray-600">
-              Ano Lectivo: <span className="font-medium text-[#0F2C59]">{activeYearData.name}</span> ({formatDateForInput(activeYearData.startDate)} à {formatDateForInput(activeYearData.endDate)})
+              Ano Lectivo:{" "}
+              <span className="font-medium text-[#0F2C59]">
+                {activeYearData.name}
+              </span>{" "}
+              ({formatDateForInput(activeYearData.startDate)} à{" "}
+              {formatDateForInput(activeYearData.endDate)})
             </p>
           </div>
         )}

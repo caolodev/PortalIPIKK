@@ -34,7 +34,7 @@ export default function PageHeader({
           className={`group flex items-center gap-2 border px-4 py-2.5 rounded-lg transition-all duration-200 ${
             buttonDisabled
               ? "border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed opacity-60"
-              : "border-[#0F2C59] text-[#0F2C59] hover:bg-[#0F2C59] hover:text-white cursor-pointer"
+              : "border-[#0F2C59] text-[#0F2C59] hover:bg-[#0F2C59] hover:text-white "
           }`}
         >
           <FontAwesomeIcon

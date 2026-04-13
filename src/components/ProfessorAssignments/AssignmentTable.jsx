@@ -136,7 +136,8 @@ export default function AssignmentTable({
                               icon={faChalkboardTeacher}
                               className="text-[#0f2c59]/60"
                             />
-                            {row.activeTeacher.teacherId === directorId
+                            {row.activeTeacher &&
+                            row.activeTeacher.teacherId === directorId
                               ? "Diretor de turma"
                               : "Professor"}
                           </p>

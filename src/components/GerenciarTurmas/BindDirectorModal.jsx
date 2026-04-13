@@ -120,12 +120,23 @@ export default function BindDirectorModal({ turma, onClose, onBind }) {
                   setSearchTerm(value);
                   if (!value) {
                     setSelectedProfessorId("");
+                    return;
                   }
+
+                  const exactMatch = professors.find((prof) => {
+                    const profName = getProfessorName(prof);
+                    return (
+                      profName &&
+                      profName.toLowerCase().trim() ===
+                        value.toLowerCase().trim()
+                    );
+                  });
+                  setSelectedProfessorId(exactMatch?.id || "");
                 }}
                 onBlur={() => {
                   const match = professors.find(
                     (prof) =>
-                      getProfessorName(prof).toLowerCase() ===
+                      getProfessorName(prof).toLowerCase().trim() ===
                       searchTerm.toLowerCase().trim(),
                   );
                   if (!match) {

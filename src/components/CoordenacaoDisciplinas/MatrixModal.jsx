@@ -20,7 +20,10 @@ export default function MatrixModal({
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
 
-  const safeSubjects = Array.isArray(subjects) ? subjects : [];
+  const safeSubjects = useMemo(
+    () => (Array.isArray(subjects) ? subjects : []),
+    [subjects],
+  );
   const safeDisabledIds =
     disabledIds instanceof Set ? disabledIds : new Set(disabledIds || []);
   const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];

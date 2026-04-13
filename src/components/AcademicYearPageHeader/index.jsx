@@ -15,7 +15,7 @@ export default function AcademicYearPageHeader({ onNewClick }) {
       <button
         onClick={onNewClick}
         title="Novo Ano Lectivo"
-        className="flex items-center gap-2 bg-[#0F2C59] text-white px-4 py-3 rounded-lg hover:bg-[#0F2C59]/90 transition-all cursor-pointer shadow-md hover:shadow-lg duration-200"
+        className="flex items-center gap-2 bg-[#0F2C59] text-white px-4 py-3 rounded-lg hover:bg-[#0F2C59]/90 transition-all  shadow-md hover:shadow-lg duration-200"
       >
         <FontAwesomeIcon icon={faCalendar} className="w-4 h-4" />
         <FontAwesomeIcon icon={faPlus} className="w-3 h-3" />

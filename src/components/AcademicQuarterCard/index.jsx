@@ -23,7 +23,7 @@ export default function AcademicQuarterCard({
         className={`${baseCardStyles} items-center justify-center p-5 border-2 border-dashed ${
           isDisabled
             ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
-            : "border-gray-300 bg-white cursor-pointer hover:border-slate-400 text-slate-400 hover:text-slate-600 shadow-sm hover:shadow-md"
+            : "border-gray-300 bg-white  hover:border-slate-400 text-slate-400 hover:text-slate-600 shadow-sm hover:shadow-md"
         }`}
       >
         <div

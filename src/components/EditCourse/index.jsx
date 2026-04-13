@@ -65,7 +65,7 @@ export default function EditCourse({ setIsOpen, course, onSuccess }) {
             disabled={loading}
             type="button"
             onClick={() => setIsOpen(false)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all "
           >
             <FontAwesomeIcon icon={faXmark} className="w-3.5 h-3.5" />
           </button>
@@ -119,14 +119,14 @@ export default function EditCourse({ setIsOpen, course, onSuccess }) {
               type="button"
               disabled={loading}
               onClick={() => setIsOpen(false)}
-              className="text-sm text-gray-500 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              className="text-sm text-gray-500 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors "
             >
               Cancelar
             </button>
             <button
               disabled={loading}
               type="submit"
-              className="flex items-center justify-center min-w-[22.5] bg-[#0F2C59] text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-[#0F2C59]/90 transition-colors cursor-pointer disabled:opacity-70"
+              className="flex items-center justify-center min-w-[22.5] bg-[#0F2C59] text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-[#0F2C59]/90 transition-colors  disabled:opacity-70"
             >
               {loading ? (
                 <FontAwesomeIcon icon={faSpinner} className="animate-spin" />

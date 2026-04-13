@@ -58,8 +58,6 @@ export default function ClassTable({
             </tr>
           ) : (
             classes.map((turma, index) => {
-              const classeText = formatClasse(turma.classe);
-              const turnoText = formatTurno(turma.turno);
               return (
                 <tr
                   key={turma.id}
