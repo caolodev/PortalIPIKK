@@ -39,14 +39,19 @@ export default function SignUp() {
       toast.error("As senhas não coincidem");
       return;
     }
+    if (firstName.trim() === "" || lastName.trim() === "" || process.trim() === "") {
+      toast.error("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+
     try {
       setSubmitting(true);
       await signup({
-        firstName,
-        lastName,
-        process,
-        email,
-        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        process: process.trim(),
+        email: email.trim(),
+        password: password.trim(),
       });
 
       toast.success("Conta criada com sucesso!");

@@ -5,13 +5,17 @@ import {
   faWarning,
 } from "@fortawesome/free-solid-svg-icons";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
 import {
   bindCoordinator,
   isProfessorActiveCoordinator,
 } from "@/services/courseRoleService";
 import { getProfessors } from "@/services/courseService";
+
+function getProfessorName(professor) {
+  return professor.name || professor.nomeCompleto || "";
+}
 
 export default function VincularCoordinator({ setIsOpen, course, onSuccess }) {
   const [professors, setProfessors] = useState([]);
@@ -21,6 +25,14 @@ export default function VincularCoordinator({ setIsOpen, course, onSuccess }) {
   const [fetching, setFetching] = useState(true);
   const [professorAlreadyCoordinating, setProfessorAlreadyCoordinating] =
     useState(null);
+
+  const filteredProfessors = useMemo(() => {
+    const normalized = searchTerm.trim().toLowerCase();
+    if (!normalized) return professors;
+    return professors.filter((professor) =>
+      getProfessorName(professor).toLowerCase().includes(normalized),
+    );
+  }, [professors, searchTerm]);
 
   useEffect(() => {
     const fetchProfessors = async () => {
@@ -33,7 +45,7 @@ export default function VincularCoordinator({ setIsOpen, course, onSuccess }) {
           );
           setProfessors(validProfessors);
         } else {
-          toast.error("Erro ao carregar professores: " + result.error);
+          console.error("Erro ao carregar professores: " + result.error);
         }
       } catch (error) {
         console.error("Erro ao buscar professores:", error);
@@ -144,24 +156,23 @@ export default function VincularCoordinator({ setIsOpen, course, onSuccess }) {
               <>
                 <input
                   type="text"
-                  list="professors-list"
                   value={searchTerm}
                   onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    // Find professor by exact name match
+                    const value = e.target.value;
+                    setSearchTerm(value);
                     const prof = professors.find((p) => {
-                      const profName = p.name || p.nomeCompleto;
+                      const profName = getProfessorName(p);
                       return (
                         profName &&
-                        profName.toLowerCase() === e.target.value.toLowerCase()
+                        profName.toLowerCase() === value.toLowerCase()
                       );
                     });
                     setSelectedProfessor(prof || null);
                   }}
                   onBlur={() => {
-                    // On blur, ensure we have a valid selection
+                    if (selectedProfessor) return;
                     const prof = professors.find((p) => {
-                      const profName = p.name || p.nomeCompleto;
+                      const profName = getProfessorName(p);
                       return (
                         profName &&
                         profName.toLowerCase() === searchTerm.toLowerCase()
@@ -175,16 +186,32 @@ export default function VincularCoordinator({ setIsOpen, course, onSuccess }) {
                   placeholder="Digite o nome do professor"
                   className="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all"
                 />
-                <datalist id="professors-list">
-                  {professors
-                    .filter((prof) => prof.name || prof.nomeCompleto)
-                    .map((prof) => (
-                      <option
+
+                {searchTerm.trim() && filteredProfessors.length > 0 && (
+                  <div className="mt-2 max-h-48 overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+                    {filteredProfessors.slice(0, 6).map((prof) => (
+                      <button
                         key={prof.id}
-                        value={prof.name || prof.nomeCompleto}
-                      />
+                        type="button"
+                        onClick={() => {
+                          const profName = getProfessorName(prof);
+                          setSearchTerm(profName);
+                          setSelectedProfessor(prof);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        {getProfessorName(prof)}
+                      </button>
                     ))}
-                </datalist>
+                  </div>
+                )}
+
+                {searchTerm.trim() && filteredProfessors.length === 0 && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Nenhum professor encontrado.
+                  </p>
+                )}
+
                 {professorAlreadyCoordinating && (
                   <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex gap-2">
                     <FontAwesomeIcon
@@ -192,8 +219,7 @@ export default function VincularCoordinator({ setIsOpen, course, onSuccess }) {
                       className="text-yellow-600 w-4 h-4 mt-0.5"
                     />
                     <p className="text-sm text-yellow-800">
-                      Este professor já é coordenador ativo de outro curso. Esta
-                      ação substituirá o vínculo anterior.
+                      Este professor já é coordenador de um curso.
                     </p>
                   </div>
                 )}

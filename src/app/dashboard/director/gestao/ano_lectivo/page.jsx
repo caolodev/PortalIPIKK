@@ -32,7 +32,7 @@ export default function AcademicYearPage() {
       setIsLoading(false);
     }
   };
-
+  
   useEffect(() => {
     fetchAcademicYears();
   }, [showNewAcademicYear, editingAcademicYear]);
@@ -50,7 +50,6 @@ export default function AcademicYearPage() {
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage,
   );
-
   useEffect(() => {
     setCurrentPage(1);
   }, [filterStatus, academicYears]);
@@ -69,7 +68,8 @@ export default function AcademicYearPage() {
       <PageHeader
         title="Gestão de Ano Lectivo"
         description="Gestão dos períodos académicos do Instituto"
-        buttonText="Novo Ano"
+        buttonText="Ano"
+        onDisa
         onButtonClick={() => {
           setShowNewAcademicYear(true);
           setEditingAcademicYear(null);

@@ -4,25 +4,77 @@ import { useAuth } from "@/contexts/AuthContext";
 import SideBar from "../../components/Dashboard/SideBar";
 import NavBar from "../../components/Dashboard/NavBar";
 import { useEffect, useState } from "react";
-import { dashboardMenu } from "../config/menu";
+import { baseMenu, roleSpecificMenu } from "../config/menu";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { faUser } from "@fortawesome/free-solid-svg-icons";
 import PageTransition from "../../components/PageTransition";
+
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathName = usePathname();
   const { user, loading } = useAuth();
-  const roleURL = pathName.split("/")[2];
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dynamicMenu, setDynamicMenu] = useState([]);
 
   useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      router.replace("/auth/login");
-      return;
+    async function fetchAdditionalRoles() {
+      if (loading) return;
+      if (!user) {
+        router.replace("/auth/login");
+        return;
+      }
+
+      try {
+        // 1. Menu Base dependendo do Role (DIRETOR, PROFESSOR, ALUNO) [cite: 8]
+        let finalMenu = [...(baseMenu[user.role.toLowerCase()] || [])];
+
+        // 2. Lógica específica para Professores (Busca de vínculos)
+        if (user.role === "PROFESSOR") {
+          const rolesFound = [];
+
+          // Verificação de Coordenação de Curso [cite: 18, 22, 25]
+          const qCoord = query(
+            collection(db, "courseRoles"),
+            where("userId", "==", user.uid),
+            where("endDate", "==", null),
+          );
+          const coordSnap = await getDocs(qCoord);
+          if (!coordSnap.empty) rolesFound.push("COORDENADOR");
+
+          // Verificação de Direção de Turma [cite: 16, 17]
+          const qDir = query(
+            collection(db, "classRoles"),
+            where("userId", "==", user.uid),
+            where("role", "==", "DIRETOR_TURMA"),
+            where("endDate", "==", null),
+          );
+          const dirSnap = await getDocs(qDir);
+          if (!dirSnap.empty) rolesFound.push("DIRETOR_TURMA");
+
+          // Injetar menus específicos conforme os cargos encontrados [cite: 17, 30]
+          rolesFound.forEach((role) => {
+            if (roleSpecificMenu[role]) {
+              finalMenu = [...finalMenu, ...roleSpecificMenu[role]];
+            }
+          });
+        }
+
+        // 3. Adicionar Perfil sempre ao final
+        finalMenu.push({
+          label: "Meu Perfil",
+          path: "/dashboard/profile",
+          icon: faUser,
+        });
+
+        setDynamicMenu(finalMenu);
+      } catch (error) {
+        console.error("Erro ao carregar menu dinâmico:", error);
+      }
     }
-    if (roleURL !== user.role.toLowerCase() && roleURL !== "profile") {
-      router.replace(`/dashboard/${user.role.toLowerCase()}`);
-    }
-  }, [router, user, roleURL, loading]);
+
+    fetchAdditionalRoles();
+  }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -33,42 +85,49 @@ export default function DashboardLayout({ children }) {
       </PageTransition>
     );
   }
-  if (!user) return null;
-  const role = user.role;
-  const firstName = user.nomeCompleto.split(" ")[0];
-  const lastName = user.nomeCompleto.split(" ").slice(-1)[0];
-  const shortName = firstName.slice(0, 2).toUpperCase();
-  const menu = user.role ? dashboardMenu[user.role.toLowerCase()] : [];
-  const activeItem = menu?.find((item) => item.path === pathName);
-  let title = "Dashboard";
-  if (pathName === "/dashboard/profile") {
-    title = "Meu Perfil";
-  } else if (activeItem) {
-    title = activeItem.label;
-  } else {
-    // Procurar pelo item pai se for um subpath
-    const pathParts = pathName.split("/").filter(Boolean);
-    if (pathParts.length >= 3) {
-      const parentPath = `/${pathParts.slice(0, 3).join("/")}`;
-      const parentItem = menu?.find((item) => item.path === parentPath);
-      if (parentItem) {
-        title = parentItem.label;
-      }
-    }
+
+  if (!user) {
+    return null;
   }
+
+  const profileMenuItem = {
+    label: "Meu Perfil",
+    path: "/dashboard/profile",
+    icon: faUser,
+  };
+  const baseMenuItems = user
+    ? [...(baseMenu[user.role.toLowerCase()] || [])]
+    : [];
+  const menuItems =
+    dynamicMenu.length > 0 ? dynamicMenu : [...baseMenuItems, profileMenuItem];
+
+  // Cálculo do Título baseado no menu atual
+  const activeItem = menuItems.find((item) => item.path === pathName);
+  let title = activeItem ? activeItem.label : "Dashboard";
+
+  const firstName = user?.nomeCompleto?.split(" ")[0] || "";
+  const lastName = user?.nomeCompleto?.split(" ").slice(-1)[0] || "";
+  const shortName = firstName.slice(0, 2).toUpperCase();
 
   return (
     <div className="relative bg-gray-50 min-h-screen">
-      <SideBar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {/* Passamos o menu dinâmico para a Sidebar renderizar */}
+      <SideBar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        menuItems={menuItems}
+      />
+
       <NavBar
         onOpen={() => setSidebarOpen(true)}
         title={title}
         firstName={firstName}
         lastName={lastName}
         shortName={shortName}
-        role={role}
+        role={user?.role}
       />
-      <main className="md:ml-65 mt-16 min-h-screen p-5">{children}</main>
+
+      <main className="md:ml-64 mt-16 min-h-screen p-5">{children}</main>
     </div>
   );
 }

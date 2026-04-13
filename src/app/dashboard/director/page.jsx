@@ -5,8 +5,8 @@ export default function DashboardDirector() {
   return (
     <div>
       <h1>Dashboard do Director</h1>
-      <p>Nome: {user.nomeCompleto}</p>
-      <p>Role: {user.role}</p>
+      <p>Nome: {user?.nomeCompleto}</p>
+      <p>Role: {user?.role}</p>
       <button onClick={logout}>Logout</button>
     </div>
   );

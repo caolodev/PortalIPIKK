@@ -20,13 +20,15 @@ export async function bindCoordinator(courseId, userId) {
     const existingCoordinatorQuery = query(
       courseRoleCollection,
       where("userId", "==", userId),
-      where("role", "==", "COORDENADOR"),
-      where("endDate", "==", null),
     );
     const existingSnapshot = await getDocs(existingCoordinatorQuery);
 
-    if (existingSnapshot.docs.length > 0) {
-      const existingCourse = existingSnapshot.docs[0].data().courseId;
+    const activeExistingCoordinator = existingSnapshot.docs
+      .map((d) => d.data())
+      .find((item) => item.role === "COORDENADOR" && item.endDate === null);
+
+    if (activeExistingCoordinator) {
+      const existingCourse = activeExistingCoordinator.courseId;
       if (existingCourse !== courseId) {
         return {
           success: false,
@@ -37,15 +39,17 @@ export async function bindCoordinator(courseId, userId) {
     }
 
     // 2. Buscar atribuições actuais de coordenação para este curso
-    const q = query(
-      courseRoleCollection,
-      where("courseId", "==", courseId),
-      where("role", "==", "COORDENADOR"),
-    );
+    const q = query(courseRoleCollection, where("courseId", "==", courseId));
     const snapshot = await getDocs(q);
 
     // 3. Encerrar qualquer coordenação que não tenha endDate (ou seja, activa)
-    const activeRoles = snapshot.docs.filter((doc) => !doc.data().endDate);
+    const activeRoles = snapshot.docs
+      .map((doc) => ({ id: doc.id, data: doc.data() }))
+      .filter(
+        (item) =>
+          item.data.role === "COORDENADOR" && item.data.endDate === null,
+      )
+      .map((item) => ({ id: item.id, data: item.data }));
 
     const terminations = activeRoles.map((roleDoc) =>
       updateDoc(doc(db, "courseRoles", roleDoc.id), { endDate: now }),
@@ -70,14 +74,28 @@ export async function bindCoordinator(courseId, userId) {
 // Obter quem é o coordenador actual de cada curso
 export async function getActiveCoordinators() {
   try {
-    const q = query(
-      courseRoleCollection,
-      where("role", "==", "COORDENADOR"),
-      where("endDate", "==", null),
-    );
+    const q = query(courseRoleCollection, where("role", "==", "COORDENADOR"));
     const snapshot = await getDocs(q);
-    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const data = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((item) => item.endDate === null);
     return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getActiveCourseForCoordinator(userId) {
+  try {
+    const q = query(courseRoleCollection, where("userId", "==", userId));
+    const snapshot = await getDocs(q);
+    const active = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .find((item) => item.role === "COORDENADOR" && item.endDate === null);
+    if (!active) {
+      return { success: true, data: null };
+    }
+    return { success: true, data: active };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -89,19 +107,15 @@ export async function isProfessorActiveCoordinator(
   excludeCourseId = null,
 ) {
   try {
-    const q = query(
-      courseRoleCollection,
-      where("userId", "==", userId),
-      where("role", "==", "COORDENADOR"),
-      where("endDate", "==", null),
-    );
+    const q = query(courseRoleCollection, where("userId", "==", userId));
     const snapshot = await getDocs(q);
+    const activeRole = snapshot.docs
+      .map((doc) => doc.data())
+      .find((item) => item.role === "COORDENADOR" && item.endDate === null);
 
-    if (snapshot.docs.length === 0) {
+    if (!activeRole) {
       return { isActive: false, courseId: null };
     }
-
-    const activeRole = snapshot.docs[0].data();
     const isActive = excludeCourseId
       ? activeRole.courseId !== excludeCourseId
       : true;
@@ -116,13 +130,11 @@ export async function isProfessorActiveCoordinator(
 // Obter histórico de coordenadores para um curso
 export async function getCoordinatorHistory(courseId) {
   try {
-    const q = query(
-      courseRoleCollection,
-      where("courseId", "==", courseId),
-      where("role", "==", "COORDENADOR"),
-    );
+    const q = query(courseRoleCollection, where("courseId", "==", courseId));
     const snapshot = await getDocs(q);
-    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const data = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((item) => item.role === "COORDENADOR");
     return { success: true, data };
   } catch (error) {
     return { success: false, error: error.message };
@@ -135,24 +147,24 @@ export async function unbindCoordinator(courseId) {
     const now = new Date().toISOString();
 
     // Buscar coordenação ativa para este curso
-    const q = query(
-      courseRoleCollection,
-      where("courseId", "==", courseId),
-      where("role", "==", "COORDENADOR"),
-      where("endDate", "==", null),
-    );
+    const q = query(courseRoleCollection, where("courseId", "==", courseId));
     const snapshot = await getDocs(q);
 
-    if (snapshot.docs.length === 0) {
+    const activeRoleDoc = snapshot.docs
+      .map((d) => ({ id: d.id, data: d.data() }))
+      .find(
+        (item) =>
+          item.data.role === "COORDENADOR" && item.data.endDate === null,
+      );
+
+    if (!activeRoleDoc) {
       return {
         success: false,
         error: "Este curso não possui coordenador ativo.",
       };
     }
 
-    // Encerrar a coordenação ativa
-    const activeRole = snapshot.docs[0];
-    await updateDoc(doc(db, "courseRoles", activeRole.id), { endDate: now });
+    await updateDoc(doc(db, "courseRoles", activeRoleDoc.id), { endDate: now });
 
     return { success: true };
   } catch (error) {

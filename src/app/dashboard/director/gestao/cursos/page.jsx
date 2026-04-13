@@ -122,8 +122,6 @@ export default function Cursos() {
         buttonText="Curso"
         onButtonClick={setIsOpen}
         buttonTitle={"Adicionar Curso"}
-        buttonDisabled={academicYearActive}
-        disabledReason="Não pode criar cursos durante um ano lectivo activo"
       />
       {loading ? (
         <div className="flex items-center justify-center mt-10 flex-col gap-4">

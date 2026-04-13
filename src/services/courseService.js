@@ -5,6 +5,7 @@ import {
   query,
   where,
   doc,
+  getDoc,
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
@@ -42,13 +43,6 @@ async function isUniqueName(name, currentId = null) {
 
 export async function createCourse({ name, code }) {
   try {
-    if (await hasActiveAcademicYear()) {
-      return {
-        success: false,
-        error: "Não pode criar cursos durante um ano lectivo activo.",
-      };
-    }
-
     if (!(await isCodeUnique(code))) {
       return { success: false, error: "Este código de curso já está em uso." };
     }
@@ -158,13 +152,25 @@ export async function getInsights() {
     return { success: false, error: error.message };
   }
 }
-
 export async function getProfessors() {
   try {
     const q = query(usersCollection, where("role", "==", "PROFESSOR"));
     const snapshot = await getDocs(q);
     const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getCourseById(courseId) {
+  try {
+    const courseRef = doc(db, "courses", courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) {
+      return { success: false, error: "Curso não encontrado." };
+    }
+    return { success: true, data: { id: courseSnap.id, ...courseSnap.data() } };
   } catch (error) {
     return { success: false, error: error.message };
   }

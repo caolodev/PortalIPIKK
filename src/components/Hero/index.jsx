@@ -1,7 +1,5 @@
 "use client";
 import Link from "next/link";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 export default function Hero({ user }) {
   return (
     <section
@@ -35,7 +33,7 @@ export default function Hero({ user }) {
               href={"/auth/login"}
               className="bg-white py-3 px-10 text-[#0F2C59] rounded-full font-black text-xl hover:bg-[#EFF6FF]"
             >
-              Acessar o Portal
+              Fazer o Login
             </Link>
             <Link
               href={"/auth/signup"}

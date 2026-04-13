@@ -3,26 +3,31 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope, faUser } from "@fortawesome/free-regular-svg-icons";
 import { faBriefcase, faFingerprint } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
 import Link from "next/link";
 
 export default function Profile() {
   const { user } = useAuth();
 
-  const firstName = user.nomeCompleto.split(" ")[0];
-  const lastName = user.nomeCompleto.split(" ").slice(-1)[0];
+  if (!user) {
+    return null;
+  }
+
+  const fullName = user.nomeCompleto || "";
+  const firstName = fullName.split(" ")[0] || "";
+  const lastName = fullName.split(" ").slice(-1)[0] || "";
   const sigla = firstName.slice(0, 2).toUpperCase();
 
-  const role =
-    user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase();
+  const role = user.role
+    ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
+    : "";
 
-  const [list] = useState([
+  const list = [
     { label: "Primeiro Nome", value: firstName },
     { label: "Sobrenome", value: lastName },
-    { label: "Email", value: user.email },
+    { label: "Email", value: user.email || "" },
     { label: "Função / Cargo", value: role },
-    { label: "Processo", value: user.processo },
-  ]);
+    { label: "Processo", value: user.processo || "" },
+  ];
 
   return (
     <div className="max-w-6xl mx-auto px-4 space-y-6">
@@ -34,7 +39,6 @@ export default function Profile() {
       </div>
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="w-full lg:max-w-xs p-6 md:p-8 bg-white border rounded-2xl shadow-md flex flex-col gap-5 text-gray-500 border-gray-300">
-          
           <div className="text-center">
             <div className="bg-[#0F2C59] text-white mx-auto w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full font-black text-2xl md:text-3xl border-3 border-gray-300 shadow-sm">
               {sigla}
@@ -74,13 +78,13 @@ export default function Profile() {
           </Link>
         </div>
         <div className="flex-1 bg-white border rounded-2xl shadow-md p-6 md:p-10 flex flex-col gap-8 border-gray-300">
-          
           <div>
             <h2 className="text-lg md:text-xl font-bold">
               Informações Pessoais
             </h2>
             <span className="text-gray-500 text-sm">
-              Apresenta de forma clara e organizada os dados pessoais dos usuários
+              Apresenta de forma clara e organizada os dados pessoais dos
+              usuários
             </span>
           </div>
           <form className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -47,10 +47,15 @@ export function AuthProvider({ children }) {
               uid: firebaseUser.uid,
               ...userSnap.data(),
             });
+          } else {
+            setUser(null);
           }
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error("Falha ao verificar estado de autenticação", error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -59,6 +64,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function signup({ firstName, lastName, email, password, process }) {
+    const usersRef = collection(db, "Users");
     const preUserRef = doc(db, "preUsers", process);
     const preUserSnap = await getDoc(preUserRef);
 
@@ -78,6 +84,19 @@ export function AuthProvider({ children }) {
       throw new Error("Nomes não correspondem ao processo.");
     }
 
+    // verificar um email válido antes de criar o usuário
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Email inválido.");
+    }
+
+    // verficar o email como unique antes de criar o usuário
+    const qEmail = query(usersRef, where("email", "==", email));
+    const queryEmailSnapshot = await getDocs(qEmail);
+
+    if (!queryEmailSnapshot.empty) {
+      throw new Error("Este email já está em uso.");
+    }
     let userCredential;
     try {
       userCredential = await createUserWithEmailAndPassword(
@@ -97,18 +116,71 @@ export function AuthProvider({ children }) {
       }
     }
 
-    // await sendEmailVerification(userCredential.user);
+    // Verificar o nomeCompleto como unique antes de criar o usuário
+    const q = query(usersRef, where("nomeCompleto", "==", dados.nomeCompleto));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      throw new Error("Este nome já está em uso.");
+    }
+    // verificar o processo como unique antes de criar o usuário
+    const qProcess = query(usersRef, where("processo", "==", process));
+    const queryProcessSnapshot = await getDocs(qProcess);
+
+    if (!queryProcessSnapshot.empty) {
+      throw new Error("Este processo já está em uso.");
+    }
+
+    // verificar o processo como unique antes de criar o usuário
+    const qProcessPre = query(usersRef, where("processo", "==", process));
+    const queryProcessPreSnapshot = await getDocs(qProcessPre);
+
+    if (!queryProcessPreSnapshot.empty) {
+      throw new Error("Este processo já está em uso.");
+    }
+
+    // criar o usuário no Firebase Authentication
     await setDoc(doc(db, "Users", userCredential.user.uid), {
       nomeCompleto: dados.nomeCompleto,
-      processo: process,
+      processo: process, // Validador de aluno
+      email: email,
       role: dados.role,
-      email,
-      cargos: dados.role === "PROFESSOR" ? [] : null,
       status: true,
-      turmaId: dados.turma || null,
-      cursoId: dados.curso || null,
+      cursoId: dados.cursoRef || null,
       createdAt: new Date(),
     });
+
+    // Matricular o aluno
+    if (dados.role === "ALUNO") {
+      const turmaId = dados.turmaInicial || null;
+      const cursoId = dados.cursoRef || null;
+      const regex = /^(\d{4}-\d{4})_.*(\d{2})/;
+      const match = turmaId.match(regex);
+      const anoLectivo = match ? match[1] : null;
+      const classe = match ? parseInt(match[2]) : null;
+
+      const q = query(
+        collection(db, "studentsRecords"),
+        where("processo", "==", process),
+        where("anoLectivo", "==", anoLectivo),
+      );
+
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        throw new Error("Este aluno já está matriculado.");
+      }
+
+      await setDoc(doc(db, "studentsRecords", userCredential.user.uid), {
+        processo: process,
+        turmaId,
+        cursoId,
+        anoLectivo,
+        classe,
+        estadoFinal: null,
+        createdAt: new Date(),
+      });
+    }
+
     await signOut(auth);
     setUser(null);
   }
@@ -126,6 +198,8 @@ export function AuthProvider({ children }) {
         throw new Error("Email inválido.");
       } else if (error.code === "auth/too-many-requests") {
         throw new Error("Muitas tentativas. Tente novamente mais tarde.");
+      } else if (error.code === "auth/invalid-credential") {
+        throw new Error("Credenciais inválidas.");
       } else {
         throw new Error("Erro ao fazer login. Tente novamente.");
       }
