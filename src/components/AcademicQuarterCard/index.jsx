@@ -11,9 +11,38 @@ export default function AcademicQuarterCard({
   isDisabled = false,
   onAdd,
   onEdit,
+  onDelete,
 }) {
   const baseCardStyles =
-    "flex flex-col w-full rounded-lg transition-all h-full min-h-[180px]";
+    "flex flex-col w-full rounded-lg transition-all h-full min-h-[180px] overflow-hidden";
+
+  const statusStyles = {
+    ACTIVE: {
+      label: "Activo",
+      badge: "text-emerald-700 bg-emerald-100",
+      card: "border-emerald-200 bg-emerald-50",
+      button: "border-emerald-200 text-emerald-700 hover:bg-emerald-100",
+    },
+    INACTIVE: {
+      label: "inactivo",
+      badge: "text-amber-700 bg-amber-100",
+      card: "border-amber-200 bg-amber-50",
+      button: "border-amber-200 text-amber-700 hover:bg-amber-100",
+    },
+    CLOSED: {
+      label: "Fechado",
+      badge: "text-slate-700 bg-slate-100",
+      card: "border-slate-200 bg-slate-50",
+      button: "border-slate-200 text-slate-700 hover:bg-slate-100",
+    },
+    UNKNOWN: {
+      label: "Desconhecido",
+      badge: "text-gray-500 bg-gray-100",
+      card: "border-gray-200 bg-white",
+      button: "border-gray-200 text-gray-600 hover:bg-gray-100",
+    },
+  };
+
   // --- CARD DE ADICIONAR ---
   if (isAddCard) {
     return (
@@ -43,31 +72,30 @@ export default function AcademicQuarterCard({
   }
 
   const { number, startDate, endDate, status } = quarter;
+  const displayNumber = Number.isInteger(number) ? number : "?";
+  const statusInfo = statusStyles[status] || statusStyles.UNKNOWN;
 
-  const tweaksByStatus = () => {
-    if (status === "ACTIVE")
-      return { text: "Activo", style: "text-green-600 bg-green-100" };
-    if (status === "INACTIVE")
-      return { text: "Inactivo", style: "text-blue-600 bg-blue-100" };
-    if (status === "CLOSED")
-      return { text: "Fechado", style: "text-red-600 bg-red-100" };
-    return { text: "Desconhecido", style: "text-gray-500 bg-gray-100" };
-  };
-
-  const statusInfo = tweaksByStatus();
   return (
     <div
-      className={`${baseCardStyles} border border-gray-200 bg-white shadow-sm overflow-hidden`}
+      className={`${baseCardStyles} border border-gray-200 bg-white shadow-sm`}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-3">
-        <h4 className="text-sm uppercase font-bold text-[#0F2C59]">
-          {number || 3}º Trimestre
-        </h4>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0F2C59] text-sm font-bold text-white">
+            {displayNumber}º
+          </div>
+          <div>
+            <p className="text-sm uppercase font-bold text-[#0F2C59]">
+              Trimestre
+            </p>
+            <p className="text-xs text-slate-500">Número do trimestre</p>
+          </div>
+        </div>
         <span
-          className={`text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-md ${statusInfo.style}`}
+          className={`text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-md ${statusInfo.badge}`}
         >
-          {statusInfo.text}
+          {statusInfo.label}
         </span>
       </div>
 
@@ -97,18 +125,33 @@ export default function AcademicQuarterCard({
         </div>
       </div>
 
-      {/* Ações */}
-      <div className="flex gap-2 p-3 pt-0">
-        <button
-          onClick={() => onEdit?.(quarter)}
-          className="grow flex items-center justify-center gap-2 py-1 px-4 border border-gray-200 rounded-[5px] text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-        >
-          <FontAwesomeIcon
-            icon={faPencilAlt}
-            className="text-slate-400 text-xs"
-          />
-          Editar
-        </button>
+      {/* acções */}
+      <div className="flex flex-col gap-3 p-3 pt-0">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => onEdit?.(quarter)}
+            className="grow flex items-center justify-center gap-2 py-1 px-4 border border-gray-200 rounded-[5px] text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <FontAwesomeIcon
+              icon={faPencilAlt}
+              className="text-slate-400 text-xs"
+            />
+            Editar
+          </button>
+
+          {status === "INACTIVE" && (
+            <button
+              onClick={() => onDelete?.(quarter)}
+              className="grow flex items-center justify-center gap-2 py-1 px-4 border rounded-[5px] text-sm font-bold text-rose-700 border-rose-200 hover:bg-rose-50 transition-colors"
+            >
+              <FontAwesomeIcon
+                icon={faTrashAlt}
+                className="text-rose-400 text-xs"
+              />
+              Apagar
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -18,6 +18,9 @@ export default function NewAnoLectivo({
   const [dataFim, setDataFim] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const isEditingActive = isEditing && data?.status === "ACTIVE";
+  const isEditingClosed = isEditing && data?.status === "CLOSED";
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -37,6 +40,10 @@ export default function NewAnoLectivo({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isEditingClosed) {
+      toast.error("Ano encerrado. Não é possível salvar alterações.");
+      return;
+    }
     setIsSubmitting(true);
     if (!dataInicio || !dataFim) {
       toast.error("Por favor, preencha todos os campos");
@@ -130,7 +137,12 @@ export default function NewAnoLectivo({
               required
               value={dataInicio}
               onChange={(e) => setDataInicio(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all"
+              disabled={isEditingClosed || isEditingActive}
+              className={`border rounded-lg px-3.5 py-2.5 text-sm focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all ${
+                isEditingClosed || isEditingActive
+                  ? "border-gray-200 bg-gray-100 text-gray-400"
+                  : "border-gray-200 bg-white text-gray-700"
+              }`}
             />
           </div>
 
@@ -147,34 +159,48 @@ export default function NewAnoLectivo({
               required
               value={dataFim}
               onChange={(e) => setDataFim(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all"
+              disabled={isEditingClosed}
+              className={`border rounded-lg px-3.5 py-2.5 text-sm focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all ${
+                isEditingClosed
+                  ? "border-gray-200 bg-gray-100 text-gray-400"
+                  : "border-gray-200 bg-white text-gray-700"
+              }`}
             />
           </div>
 
-          <div className="col-span-2 flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setAddAnoLectivo(false)}
-              className="text-sm text-gray-500 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors "
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center justify-center min-w-[22.5] bg-[#0F2C59] text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-[#0F2C59]/90 transition-colors  disabled:opacity-70"
-            >
-              {isSubmitting ? (
-                <FontAwesomeIcon
-                  icon={faSpinner}
-                  className="animate-spin w-4 h-4"
-                />
-              ) : isEditing ? (
-                "Atualizar"
-              ) : (
-                "Criar"
+          <div className="col-span-2 flex flex-col gap-3 pt-2">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setAddAnoLectivo(false)}
+                className="text-sm text-gray-500 font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              {!isEditingClosed && (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex items-center justify-center min-w-[22.5] bg-[#0F2C59] text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-[#0F2C59]/90 transition-colors disabled:opacity-70"
+                >
+                  {isSubmitting ? (
+                    <FontAwesomeIcon
+                      icon={faSpinner}
+                      className="animate-spin w-4 h-4"
+                    />
+                  ) : isEditing ? (
+                    "Atualizar"
+                  ) : (
+                    "Criar"
+                  )}
+                </button>
               )}
-            </button>
+            </div>
+            {isEditingClosed && (
+              <p className="text-sm text-gray-500">
+                Este ano está encerrado. As datas não podem ser alteradas.
+              </p>
+            )}
           </div>
         </form>
       </div>

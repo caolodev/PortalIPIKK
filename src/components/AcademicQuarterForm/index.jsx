@@ -3,24 +3,46 @@ import toast from "react-hot-toast";
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import { faClock, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faClock } from "@fortawesome/free-solid-svg-icons";
 import {
   createAcademicQuarter,
   updateAcademicQuarter,
 } from "@/services/academicQuarter";
-import { Cossette_Texte } from "next/font/google";
 export default function AcademicQuarterForm({
   setShowFormQuarter,
   isEditing = false,
   data = null,
+  quarterNumber,
   academicYearId,
   activeYearData,
   onSuccess,
 }) {
-  console.log(activeYearData.data);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isYearClosed = activeYearData?.status === "CLOSED";
+  const quarterStatus = data?.status;
+  const isActiveQuarter = isEditing && quarterStatus === "ACTIVE";
+  const isClosedQuarter = isEditing && quarterStatus === "CLOSED";
+  const disableStartDate = isYearClosed || isActiveQuarter || isClosedQuarter;
+  const disableEndDate = isYearClosed || isClosedQuarter;
+  const disableSubmit = isYearClosed || isClosedQuarter;
+  const toastError = (message) => {
+    toast.error(message, {
+      style: {
+        background: "#0F2C59",
+        color: "#ffffff",
+        fontWeight: "600",
+      },
+    });
+  };
+  const statusNotice = isYearClosed
+    ? "Ano lectivo encerrado. Nenhuma alteração é permitida."
+    : isClosedQuarter
+      ? "Trimestre encerrado. Edição bloqueada."
+      : isActiveQuarter
+        ? "Trimestre activo. Apenas a alteração da data de fim é permitida."
+        : "";
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -43,6 +65,12 @@ export default function AcademicQuarterForm({
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      if (startDate && endDate && startDate > endDate) {
+        throw new Error(
+          "A data de início deve ser anterior ou igual à data de fim.",
+        );
+      }
+
       let response;
       if (isEditing && data?.id) {
         response = await updateAcademicQuarter(data.id, {
@@ -66,7 +94,7 @@ export default function AcademicQuarterForm({
       if (onSuccess) onSuccess();
       setShowFormQuarter(false);
     } catch (error) {
-      toast.error(error.message || "Erro ao processar trimestre");
+      toastError(error.message || "Erro ao processar trimestre");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,17 +103,22 @@ export default function AcademicQuarterForm({
   const formatDateForInput = (dateStr) => {
     const date = new Date(dateStr);
     const year = date.getFullYear();
-    const month =
-      date
-        .toLocaleDateString("pt-PT", { month: "short" })
-        .charAt(0)
-        .toUpperCase() +
-      date
-        .toLocaleDateString("pt-PT", { month: "short" })
-        .slice(1)
-        .replace(".", "");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  };
+
+  const visibleNumber = isEditing ? data?.number : quarterNumber;
+  const formattedNumber = Number.isInteger(visibleNumber)
+    ? `${visibleNumber}º`
+    : "?º";
+
+  const formatDateForDisplay = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString("pt-PT", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   return (
@@ -133,8 +166,8 @@ export default function AcademicQuarterForm({
               <span className="font-medium text-[#0F2C59]">
                 {activeYearData.name}
               </span>{" "}
-              ({formatDateForInput(activeYearData.startDate)} à{" "}
-              {formatDateForInput(activeYearData.endDate)})
+              ({formatDateForDisplay(activeYearData.startDate)} à{" "}
+              {formatDateForDisplay(activeYearData.endDate)})
             </p>
           </div>
         )}
@@ -144,6 +177,26 @@ export default function AcademicQuarterForm({
           className="px-6 py-5 grid grid-cols-2 gap-4"
           onSubmit={handleSubmit}
         >
+          {(statusNotice || isYearClosed) && (
+            <div className="col-span-2 px-4 py-3 rounded-lg bg-[#f8fafc] border border-[#0F2C59]/20 text-sm text-[#0F2C59]">
+              {statusNotice}
+            </div>
+          )}
+          <div className="col-span-2 flex flex-col gap-1.5">
+            <label
+              htmlFor="quarterNumber"
+              className="text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Número
+            </label>
+            <input
+              type="text"
+              id="quarterNumber"
+              value={formattedNumber}
+              readOnly
+              className="px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-700"
+            />
+          </div>
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="startDate"
@@ -157,7 +210,10 @@ export default function AcademicQuarterForm({
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               required
-              className="px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20 focus:border-[#0F2C59] bg-white"
+              min={formatDateForInput(activeYearData.startDate)}
+              max={endDate || formatDateForInput(activeYearData.endDate)}
+              disabled={disableStartDate}
+              className={`px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20 focus:border-[#0F2C59] bg-white ${disableStartDate ? "opacity-60 cursor-not-allowed" : "border border-gray-200"}`}
             />
           </div>
 
@@ -174,7 +230,10 @@ export default function AcademicQuarterForm({
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               required
-              className="px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20 focus:border-[#0F2C59] bg-white"
+              min={startDate || formatDateForInput(activeYearData.startDate)}
+              max={formatDateForInput(activeYearData.endDate)}
+              disabled={disableEndDate}
+              className={`px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20 focus:border-[#0F2C59] bg-white ${disableEndDate ? "opacity-60 cursor-not-allowed" : "border border-gray-200"}`}
             />
           </div>
 
@@ -189,14 +248,13 @@ export default function AcademicQuarterForm({
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || disableSubmit}
             className="px-4 py-2.5 text-sm font-medium text-white bg-[#0F2C59] border border-transparent rounded-lg hover:bg-[#0F2C59]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
-              <FontAwesomeIcon
-                icon={faSpinner}
-                className="animate-spin w-4 h-4 text-gray-100"
-              />
+              <div className="mx-auto h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            ) : disableSubmit ? (
+              "Bloqueado"
             ) : isEditing ? (
               "Atualizar"
             ) : (

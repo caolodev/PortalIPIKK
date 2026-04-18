@@ -5,15 +5,34 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { updateCourse } from "@/services/courseService";
 
-export default function EditCourse({ setIsOpen, course, onSuccess }) {
+export default function EditCourse({
+  setIsOpen,
+  course,
+  onSuccess,
+  isHistoric = false,
+  isCheckingHistory = false,
+}) {
   const [name, setName] = useState(course.name || "");
   const [code, setCode] = useState(course.code || "");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setName(course.name || "");
+    setCode(course.code || "");
+  }, [course]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
+      if (isHistoric) {
+        toast.error(
+          "Identidade do curso preservada devido ao histórico académico.",
+        );
+        setLoading(false);
+        return;
+      }
+
       if (!name.trim() || !code.trim()) {
         toast.error("Por favor, preencha todos os campos.");
         setLoading(false);
@@ -92,7 +111,8 @@ export default function EditCourse({ setIsOpen, course, onSuccess }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex.: Informática"
-              className="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all"
+              readOnly={isHistoric}
+              className="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
             />
           </div>
 
@@ -108,12 +128,21 @@ export default function EditCourse({ setIsOpen, course, onSuccess }) {
               id="codigoCurso"
               required
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) =>
+                setCode(e.target.value.toUpperCase().slice(0, 3))
+              }
               placeholder="Ex.: INF"
-              className="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all"
+              maxLength={3}
+              readOnly={isHistoric}
+              className="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 focus:border-[#0F2C59] focus:ring-2 focus:ring-[#0F2C59]/10 outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
             />
           </div>
 
+          {isHistoric && (
+            <div className="col-span-2 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+              Identidade do curso preservada devido ao histórico académico.
+            </div>
+          )}
           <div className="col-span-2 flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
@@ -124,7 +153,7 @@ export default function EditCourse({ setIsOpen, course, onSuccess }) {
               Cancelar
             </button>
             <button
-              disabled={loading}
+              disabled={loading || isHistoric}
               type="submit"
               className="flex items-center justify-center min-w-[22.5] bg-[#0F2C59] text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-[#0F2C59]/90 transition-colors  disabled:opacity-70"
             >

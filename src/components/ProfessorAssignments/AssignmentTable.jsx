@@ -11,12 +11,7 @@ import {
 import { faClock } from "@fortawesome/free-regular-svg-icons";
 
 function getInitials(name) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
+  return name.slice(0, 2).toUpperCase();
 }
 
 export default function AssignmentTable({
@@ -89,7 +84,7 @@ export default function AssignmentTable({
                 Professor Atual
               </th>
               <th className="w-44 px-3 sm:px-4 md:px-6 py-3 md:py-4 text-[9px] sm:text-[10px] md:text-xs text-right font-light text-gray-500 uppercase tracking-wider">
-                Ação
+                Acção
               </th>
             </tr>
           </thead>
@@ -138,7 +133,7 @@ export default function AssignmentTable({
                             />
                             {row.activeTeacher &&
                             row.activeTeacher.teacherId === directorId
-                              ? "Diretor de turma"
+                              ? "director de turma"
                               : "Professor"}
                           </p>
                         </div>

@@ -1,26 +1,37 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit } from "@fortawesome/free-regular-svg-icons";
+import {
+  faCheck,
+  faClock,
+  faLock,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 
 const statusConfig = {
   ACTIVE: {
     label: "Activo",
-    classes: "bg-green-100 text-green-700 border border-green-200",
-  },
-  CLOSED: {
-    label: "Encerrado",
-    classes: "bg-red-100 text-red-600 border border-red-200",
+    classes: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+    icon: faCheck,
   },
   INACTIVE: {
     label: "Inactivo",
-    classes: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+    classes: "bg-amber-100 text-amber-800 border border-amber-200",
+    icon: faClock,
+  },
+  CLOSED: {
+    label: "Encerrado",
+    classes: "bg-slate-100 text-slate-700 border border-slate-300",
+    icon: faLock,
   },
 };
 
-export default function AcademicYearRow({ yearItem, onEdit }) {
+export default function AcademicYearRow({ yearItem, onEdit, onDelete }) {
   const isClosed = yearItem.status === "CLOSED";
+  const isInactive = yearItem.status === "INACTIVE";
   const status = statusConfig[yearItem.status] ?? {
     label: yearItem.status,
     classes: "bg-gray-100 text-gray-600 border border-gray-200",
+    icon: faLock,
   };
 
   return (
@@ -36,26 +47,43 @@ export default function AcademicYearRow({ yearItem, onEdit }) {
       </td>
       <td className="px-3 md:px-6 py-4">
         <span
-          className={`px-2.5 py-1 rounded-md text-[11px] font-medium tracking-wide ${status.classes}`}
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide ${status.classes}`}
         >
+          <FontAwesomeIcon icon={status.icon} className="w-3.5 h-3.5" />
           {status.label}
         </span>
       </td>
       <td className="px-3 md:px-6 py-4 text-right">
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => onEdit(yearItem)}
-            disabled={isClosed}
             title="Editar"
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150
-              ${
-                isClosed
-                  ? "text-gray-300 cursor-not-allowed"
-                  : "text-gray-400 hover:text-[#0F2C59] hover:bg-[#0F2C59]/8 "
-              }`}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#0F2C59] border border-[#0F2C59]/20 bg-[#0F2C59]/5 hover:bg-[#0F2C59]/10 transition-all duration-150"
           >
             <FontAwesomeIcon icon={faEdit} className="w-3.5 h-3.5" />
           </button>
+
+          {isInactive ? (
+            <button
+              type="button"
+              onClick={() => onDelete?.(yearItem)}
+              title="Apagar"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-red-700 bg-red-100 border border-red-200 hover:bg-red-200 transition-all duration-150"
+            >
+              <FontAwesomeIcon icon={faTrash} className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <div
+              title={
+                isClosed
+                  ? "Não é possível apagar um ano encerrado"
+                  : "Só é possível apagar anos inativos"
+              }
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 bg-slate-100 border border-slate-200"
+            >
+              <FontAwesomeIcon icon={faTrash} className="w-3.5 h-3.5" />
+            </div>
+          )}
         </div>
       </td>
     </tr>

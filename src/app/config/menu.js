@@ -75,7 +75,7 @@ export const roleSpecificMenu = {
       icon: faChartLine,
     },
   ],
-  DIRETOR_TURMA: [
+  DIRECTOR_TURMA: [
     { type: "separator", label: "DIRECÇÃO DE TURMA" },
     {
       label: "Direcção de Turma",

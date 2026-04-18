@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }) {
       }
 
       try {
-        // 1. Menu Base dependendo do Role (DIRETOR, PROFESSOR, ALUNO) [cite: 8]
+        // 1. Menu Base dependendo do Role (director, PROFESSOR, ALUNO) [cite: 8]
         let finalMenu = [...(baseMenu[user.role.toLowerCase()] || [])];
 
         // 2. Lógica específica para Professores (Busca de vínculos)
@@ -46,12 +46,11 @@ export default function DashboardLayout({ children }) {
           const qDir = query(
             collection(db, "classRoles"),
             where("userId", "==", user.uid),
-            where("role", "==", "DIRETOR_TURMA"),
             where("endDate", "==", null),
+            where("role", "==", "DIRECTOR_TURMA"),
           );
           const dirSnap = await getDocs(qDir);
-          if (!dirSnap.empty) rolesFound.push("DIRETOR_TURMA");
-
+          if (!dirSnap.empty) rolesFound.push("DIRECTOR_TURMA");
           // Injetar menus específicos conforme os cargos encontrados [cite: 17, 30]
           rolesFound.forEach((role) => {
             if (roleSpecificMenu[role]) {

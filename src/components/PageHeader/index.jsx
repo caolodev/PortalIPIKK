@@ -15,7 +15,7 @@ export default function PageHeader({
   const showButton = Boolean(buttonText);
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-10">
+    <div className="flex gap-6 items-center justify-between mb-10 flex-wrap">
       <div className="flex items-end gap-6">
         <div className="w-[0.75] h-12 bg-[#0F2C59] rounded-full shrink-0" />
         <div>
@@ -31,10 +31,10 @@ export default function PageHeader({
           onClick={onButtonClick}
           disabled={buttonDisabled}
           title={buttonDisabled ? disabledReason : buttonTitle}
-          className={`group flex items-center gap-2 border px-4 py-2.5 rounded-lg transition-all duration-200 ${
+          className={`group flex items-center gap-2 border px-4 py-2.5 rounded-lg transition-all w-fit duration-200 ${
             buttonDisabled
               ? "border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed opacity-60"
-              : "border-[#0F2C59] text-[#0F2C59] hover:bg-[#0F2C59] hover:text-white "
+              : "border-[#0F2C59] text-[#0F2C59] hover:bg-[#0F2C59] hover:text-white"
           }`}
         >
           <FontAwesomeIcon

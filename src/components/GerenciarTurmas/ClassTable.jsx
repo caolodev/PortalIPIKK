@@ -33,9 +33,9 @@ export default function ClassTable({
               "TURMA",
               "CLASSE",
               "TURNO",
-              "DIRETOR DE TURMA",
+              "director DE TURMA",
               "ESTADO",
-              "AÇÕES",
+              "acções",
             ].map((heading) => (
               <th
                 key={heading}
@@ -96,12 +96,16 @@ export default function ClassTable({
                       </div>
                     ) : (
                       <span className="text-[10px] sm:text-[11px] md:text-[12px] text-gray-400 italic">
-                        Sem diretor de turma
+                        Sem director de turma
                       </span>
                     )}
                   </td>
                   <td className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
-                    <StatusBadge active={turma.active} />
+                    <StatusBadge
+                      active={turma.active}
+                      hasCoordinator={!!turma.director}
+                      academicYearActive={turma.academicYearActive}
+                    />
                   </td>
                   <td className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
                     <div className="flex items-center gap-1 sm:gap-1.5">

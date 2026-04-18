@@ -69,7 +69,7 @@ export async function unbindClassDirector(turmaId) {
     if (!activeDoc) {
       return {
         success: false,
-        error: "Esta turma não possui diretor de turma ativo.",
+        error: "Esta turma não possui director de turma ativo.",
       };
     }
 

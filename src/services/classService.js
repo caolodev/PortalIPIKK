@@ -1,13 +1,12 @@
 import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import generateAcademicYearName from "./academicYear";
+import { getActiveAcademicYear } from "./academicYear";
 const classCollection = collection(db, "class");
 const templateCollection = collection(db, "classTemplates");
 
 function getCodeFromNomeExibicao(nomeExibicao) {
   return nomeExibicao?.split("_")[1] || null;
 }
-
 function parseClasseFromCode(code) {
   const match = code?.match(/(\d{2})/);
   return match ? match[1] : null;
@@ -20,12 +19,12 @@ function parseTurnoFromCode(code) {
   return null;
 }
 
-async function getNextClassSigla(cursoId, classe, turno) {
+async function getNextClassSigla(cursoId, classe) {
   const q = query(templateCollection, where("cursoId", "==", cursoId));
   const snapshot = await getDocs(q);
   const siglas = snapshot.docs
     .map((doc) => doc.data())
-    .filter((item) => item.classe === classe && item.turno === turno)
+    .filter((item) => item.classe === classe)
     .map((item) => item.sigla || item.letra)
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b));
@@ -92,7 +91,11 @@ export async function getClassesByCourse(cursoId, anoLectivoId) {
         }, {})
       : {};
 
-    // 5. Unir as peças: Turma + Diretor + status
+    const activeYearResult = await getActiveAcademicYear();
+    const academicYearActive =
+      activeYearResult.success && !!activeYearResult.data;
+
+    // 5. Unir as peças: Turma + director + status
     const completeData = classes.map((turma) => {
       const template = templateMap[turma.templateId] || {};
       const code =
@@ -107,7 +110,8 @@ export async function getClassesByCourse(cursoId, anoLectivoId) {
           turma.classe || template.classe || parseClasseFromCode(code) || "-",
         turno: turma.turno || template.turno || parseTurnoFromCode(code) || "-",
         director,
-        active: !!director,
+        academicYearActive,
+        active: academicYearActive && !!director,
       };
     });
 

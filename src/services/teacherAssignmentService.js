@@ -6,13 +6,12 @@ import {
   where,
   doc,
   updateDoc,
-  getDoc,
-  orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const assignmentCollection = collection(db, "teacherAssignments");
 const usersCollection = collection(db, "Users");
+const classRolesCollection = collection(db, "classRoles");
 
 /**
  * Atribui um professor a uma disciplina dentro de uma turma.

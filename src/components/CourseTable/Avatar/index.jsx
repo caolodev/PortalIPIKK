@@ -7,8 +7,8 @@ const PALETTE = [
   { bg: "#EAF3DE", color: "#27500A" },
 ];
 
-function getInitials(name = "") {
-  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("");
+function getInitials(name) {
+  return name.slice(0,2).toUpperCase();
 }
 
 export default function Avatar({ name, index }) {

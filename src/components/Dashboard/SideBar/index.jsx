@@ -30,12 +30,12 @@ const SideBar = ({ isOpen, onClose, menuItems = [] }) => {
         } md:translate-x-0`}
       >
         <div className="h-16 flex items-center justify-between px-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <Image src="/logo.png" alt="logo" width={40} height={40} />
             <span className="text-white font-semibold text-lg">
               Portal IPIKK
             </span>
-          </div>
+          </Link>
           <button
             onClick={onClose}
             className="md:hidden text-white/70 hover:text-white"

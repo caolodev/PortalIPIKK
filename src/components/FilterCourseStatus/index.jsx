@@ -3,8 +3,8 @@ import { faFilter } from "@fortawesome/free-solid-svg-icons";
 
 const STATUS_OPTIONS = [
   { value: "ALL", label: "Todos", activeClass: "" },
-  { value: "ACTIVE", label: "Ativo", activeClass: "text-green-700" },
-  { value: "INACTIVE", label: "Inativo", activeClass: "text-yellow-700" },
+  { value: "ACTIVE", label: "Ativos", activeClass: "text-green-700" },
+  { value: "INACTIVE", label: "Inactivos", activeClass: "text-yellow-700" },
 ];
 
 export default function FilterCourseStatus({ filterStatus, onFilterChange }) {

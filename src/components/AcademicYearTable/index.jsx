@@ -7,9 +7,10 @@ export default function AcademicYearTable({
   displayedAcademicYears,
   isLoading,
   onEdit,
+  onDelete,
 }) {
   return (
-    <div className="overflow-x-auto shadow rounded-2xl">
+    <div className="overflow-x-auto shadow rounded-md border border-gray-200">
       <table className="w-full border-separate border-spacing-0 min-w-max">
         <thead className="bg-gray-100">
           <tr className="border-b">
@@ -26,7 +27,7 @@ export default function AcademicYearTable({
               Estado
             </th>
             <th className="px-3 md:px-6 py-4 text-right text-[10px] md:text-xs font-light text-gray-500 uppercase tracking-wider">
-              Ações
+              acções
             </th>
           </tr>
         </thead>
@@ -53,6 +54,7 @@ export default function AcademicYearTable({
                 key={yearItem.id}
                 yearItem={yearItem}
                 onEdit={onEdit}
+                onDelete={onDelete}
               />
             ))
           ) : (

@@ -4,6 +4,8 @@ import {
   faUserPlus,
   faClockRotateLeft,
   faUserMinus,
+  faPenToSquare,
+  faArchive,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "./Avatar";
 import StatusBadge from "./StatusBadge";
@@ -11,6 +13,8 @@ import StatusBadge from "./StatusBadge";
 export default function CourseTable({
   courses,
   onVincular,
+  onEdit,
+  onDeactivate,
   onHistory,
   onDesvincular,
   academicYearActive = true,
@@ -20,7 +24,7 @@ export default function CourseTable({
       <table className="w-full border-separate border-spacing-0 min-w-max">
         <thead className="bg-gray-100">
           <tr>
-            {["Curso", "Código", "Coordenador Actual", "Estado", "Ações"].map(
+            {["Curso", "Código", "Coordenador Actual", "Estado", "acções"].map(
               (h) => (
                 <th
                   key={h}
@@ -86,12 +90,40 @@ export default function CourseTable({
 
               {/* Estado */}
               <td className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
-                <StatusBadge active={course.active} />
+                <StatusBadge estado={course.estado} />
               </td>
 
-              {/* Ações */}
+              {/* acções */}
               <td className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
-                <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+                  <button
+                    onClick={() => onEdit(course)}
+                    className="inline-flex items-center gap-1 sm:gap-1.5
+                               text-[10px] sm:text-[11px] md:text-[12px]
+                               text-[#0F2C59] border border-[#0F2C59]/20 rounded-md
+                               bg-[#0F2C59]/5 px-1.5 sm:px-2 md:px-2.5 py-0.5 sm:py-1
+                               hover:bg-[#0F2C59]/10 transition-colors"
+                  >
+                    <FontAwesomeIcon
+                      icon={faPenToSquare}
+                      className="text-[9px] sm:text-[10px]"
+                    />
+                    <span className="hidden sm:inline">Editar</span>
+                  </button>
+                  <button
+                    onClick={() => onDeactivate(course)}
+                    className="inline-flex items-center gap-1 sm:gap-1.5
+                               text-[10px] sm:text-[11px] md:text-[12px]
+                               text-orange-600 border border-orange-200 rounded-md
+                               px-1.5 sm:px-2 md:px-2.5 py-0.5 sm:py-1
+                               hover:bg-orange-50 transition-colors"
+                  >
+                    <FontAwesomeIcon
+                      icon={faArchive}
+                      className="text-[9px] sm:text-[10px]"
+                    />
+                    <span className="hidden sm:inline">Arquivar</span>
+                  </button>
                   {course.coordinator ? (
                     <button
                       onClick={() => onDesvincular(course)}

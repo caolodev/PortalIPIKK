@@ -66,14 +66,14 @@ export default function BindDirectorModal({ turma, onClose, onBind }) {
     try {
       const result = await bindClassDirector(turma.id, selectedProfessorId);
       if (!result.success) {
-        toast.error(result.error || "Erro ao vincular diretor de turma.");
+        toast.error(result.error || "Erro ao vincular director de turma.");
       } else {
-        toast.success("Diretor de turma vinculado com sucesso.");
+        toast.success("director de turma vinculado com sucesso.");
         onBind();
         onClose();
       }
     } catch (error) {
-      toast.error("Erro ao vincular diretor de turma.");
+      toast.error("Erro ao vincular director de turma.");
     } finally {
       setSubmitting(false);
     }
@@ -88,7 +88,7 @@ export default function BindDirectorModal({ turma, onClose, onBind }) {
       <div className="relative bg-white rounded-xl border border-gray-200 w-full max-w-md mx-4 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100">
           <h2 className="text-base font-semibold text-[#0F2C59]">
-            Vincular Diretor de Turma
+            Vincular director de Turma
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             Selecione um professor que leciona nesta turma.

@@ -346,7 +346,7 @@ export default function ProfessorAssignmentsPage() {
             </div>
             {selectedTurma?.director && (
               <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                <p className="font-semibold">Diretor de turma</p>
+                <p className="font-semibold">director de turma</p>
                 <p>
                   {selectedTurma.director.name} • desde{" "}
                   {selectedTurma.director.since}
@@ -433,7 +433,7 @@ export default function ProfessorAssignmentsPage() {
                       <p
                         className={`mt-3 text-xs font-medium ${isSelected ? "text-blue-200" : "text-slate-500"}`}
                       >
-                        Diretor de turma: {turma.director.name}
+                        director de turma: {turma.director.name}
                       </p>
                     )}
                     {counts && (

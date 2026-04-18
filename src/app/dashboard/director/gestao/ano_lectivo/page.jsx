@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { getAcademicYears } from "@/services/academicYear";
+import { getAcademicYears, deleteAcademicYear } from "@/services/academicYear";
 import PageHeader from "@/components/PageHeader";
 import FilterStatusSelect from "@/components/FilterStatusSelect";
 import AcademicYearTable from "@/components/AcademicYearTable";
@@ -32,7 +32,7 @@ export default function AcademicYearPage() {
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchAcademicYears();
   }, [showNewAcademicYear, editingAcademicYear]);
@@ -54,13 +54,34 @@ export default function AcademicYearPage() {
     setCurrentPage(1);
   }, [filterStatus, academicYears]);
 
+  const hasActiveAcademicYear = academicYears.some(
+    (year) => year.status === "ACTIVE",
+  );
+
   const handleEdit = (academicYear) => {
-    if (academicYear.status === "CLOSED") {
-      toast.error("Não é possível editar um ano lectivo encerrado.");
-      return;
-    }
     setEditingAcademicYear(academicYear);
     setShowNewAcademicYear(true);
+  };
+
+  const handleDelete = async (yearItem) => {
+    if (yearItem.status !== "INACTIVE") return;
+    const confirmDelete = window.confirm(
+      `Tem certeza que deseja apagar o ano lectivo ${yearItem.name}?`,
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const response = await deleteAcademicYear(yearItem.id);
+      if (!response.success) {
+        toast.error(response.error || "Erro ao apagar ano lectivo");
+        return;
+      }
+      toast.success("Ano lectivo apagado com sucesso.");
+      fetchAcademicYears();
+    } catch (error) {
+      toast.error(error.message || "Erro ao apagar ano lectivo");
+      console.error(error);
+    }
   };
 
   return (
@@ -69,13 +90,23 @@ export default function AcademicYearPage() {
         title="Gestão de Ano Lectivo"
         description="Gestão dos períodos académicos do Instituto"
         buttonText="Ano"
-        onDisa
+        buttonDisabled={hasActiveAcademicYear}
+        disabledReason={
+          hasActiveAcademicYear
+            ? "Encerre o ano actual para permitir um novo ciclo"
+            : ""
+        }
         onButtonClick={() => {
           setShowNewAcademicYear(true);
           setEditingAcademicYear(null);
         }}
         buttonTitle="Novo Ano Lectivo"
       />
+      {hasActiveAcademicYear && (
+        <div className="mb-4 rounded-md border border-[#F6C143]/40 bg-[#FFFBEB] p-4 text-sm text-[#9A6C0A]">
+          Não é possível criar um novo ano lectivo enquanto houver um ano em andamento.
+        </div>
+      )}
 
       <FilterStatusSelect
         filterStatus={filterStatus}
@@ -85,6 +116,7 @@ export default function AcademicYearPage() {
       <AcademicYearTable
         displayedAcademicYears={displayedAcademicYears}
         onEdit={handleEdit}
+        onDelete={handleDelete}
         isLoading={isLoading}
       />
 

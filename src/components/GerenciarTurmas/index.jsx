@@ -178,20 +178,20 @@ export default function GerenciarTurmas() {
 
   const handleUnbind = async (turma) => {
     const confirmed = window.confirm(
-      `Desvincular o diretor da turma ${turma.nomeExibicao}?`,
+      `Desvincular o director da turma ${turma.nomeExibicao}?`,
     );
     if (!confirmed) return;
     setActionLoading(true);
     try {
       const result = await unbindClassDirector(turma.id);
       if (!result.success) {
-        toast.error(result.error || "Erro ao desvincular diretor de turma.");
+        toast.error(result.error || "Erro ao desvincular director de turma.");
       } else {
-        toast.success("Diretor de turma desvinculado com sucesso.");
+        toast.success("director de turma desvinculado com sucesso.");
         await refreshClasses();
       }
     } catch (error) {
-      toast.error("Erro ao desvincular diretor de turma.");
+      toast.error("Erro ao desvincular director de turma.");
     } finally {
       setActionLoading(false);
     }

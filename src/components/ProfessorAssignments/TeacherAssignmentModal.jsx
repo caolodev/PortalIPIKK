@@ -29,7 +29,9 @@ export default function TeacherAssignmentModal({
   loading,
   subjectName,
   currentTeacherName,
+  isAlreadyAssigned,
   isCurrentTeacherDirector,
+  professorSubjects,
 }) {
   if (!open) return null;
 
@@ -38,7 +40,7 @@ export default function TeacherAssignmentModal({
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
         {/* Header */}
-        <div className="border-b border-slate-100 px-6 py-4">
+        <div className="border-b border-slate-100 px-6 py-4 items-center">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="mt-1.5 text-lg font-bold text-slate-900">
@@ -51,15 +53,23 @@ export default function TeacherAssignmentModal({
               </p>
               {isCurrentTeacherDirector && (
                 <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                  Atenção: esta disciplina está atualmente atribuída ao diretor
-                  de turma. Alterar o professor irá substituir essa atribuição.
+                  Atenção: esta disciplina está atualmente atribuída ao director
+                  de turma. Alterar o professor poderá substituir essa
+                  atribuição.
+                </div>
+              )}
+              {isAlreadyAssigned && (
+                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  Atenção: este professor leciona a(s) disciplina(s):{" "}
+                  {professorSubjects.map((s) => s.name).join(", ")}. queres
+                  adicionar está disciplina a ele também?
                 </div>
               )}
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition hover:bg-slate-100"
+              className="inline-flex items-center justify-center mt-3 p-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition hover:bg-slate-100"
               aria-label="Fechar modal"
             >
               <FontAwesomeIcon icon={faTimes} className="text-xs" />
@@ -75,7 +85,7 @@ export default function TeacherAssignmentModal({
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
             />
             <input
-              type="search"
+              type="text"
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Buscar professor pelo nome..."
