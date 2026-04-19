@@ -85,9 +85,24 @@ export async function getClassDirectorHistory(turmaId) {
   try {
     const q = query(classRoleCollection, where("turmaId", "==", turmaId));
     const snapshot = await getDocs(q);
-    const data = snapshot.docs
+    const roles = snapshot.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
       .filter((item) => item.role === "DIRECTOR_TURMA");
+
+    const usersSnapshot = await getDocs(collection(db, "Users"));
+    const users = usersSnapshot.docs.reduce(
+      (acc, doc) => ({
+        ...acc,
+        [doc.id]: doc.data().nomeCompleto || "Desconhecido",
+      }),
+      {},
+    );
+
+    const data = roles.map((item) => ({
+      ...item,
+      name: users[item.userId] || "Desconhecido",
+    }));
+
     return { success: true, data };
   } catch (error) {
     return { success: false, error: error.message };

@@ -11,11 +11,48 @@ import {
   limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { getActiveCoordinators } from "./courseRoleService";
+import { getActiveAcademicYear } from "./academicYear";
 
 const courseCollection = collection(db, "courses");
 const academicYearCollection = collection(db, "academicYears");
 const usersCollection = collection(db, "Users");
+
+// Obter coordenadores ativos para múltiplos cursos
+export async function getCoordinatorsForCourses(courseIds) {
+  try {
+    if (!courseIds || courseIds.length === 0) {
+      return { success: true, data: {} };
+    }
+
+    const q = query(
+      collection(db, "courseRoles"),
+      where("role", "==", "COORDENADOR"),
+    );
+    const snapshot = await getDocs(q);
+
+    const usersSnapshot = await getDocs(usersCollection);
+    const users = usersSnapshot.docs.reduce(
+      (acc, d) => ({ ...acc, [d.id]: d.data() }),
+      {},
+    );
+
+    const coordinatorMap = {};
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      // Filtrar apenas coordenadores ativos (sem endDate) e dos cursos solicitados
+      if (!data.endDate && courseIds.includes(data.courseId)) {
+        coordinatorMap[data.courseId] = {
+          name: users[data.userId]?.nomeCompleto || "Desconhecido",
+          startDate: data.startDate,
+        };
+      }
+    });
+
+    return { success: true, data: coordinatorMap };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
 
 // --- FUNÇÕES MANTIDAS E REFORÇADAS ---
 
@@ -53,22 +90,37 @@ export async function getCourseById(courseId) {
   }
 }
 
+export async function hasClassActive(id) {
+  try {
+    const activeYear = await getActiveAcademicYear();
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
 // --- REGRAS DE ATUALIZAÇÃO E ARQUIVAMENTO ---
 
 export async function updateCourse(id, { name, code }) {
   try {
-    const qClass = query(
-      collection(db, "class"),
-      where("courseId", "==", id),
-      limit(1),
-    );
-    const classSnap = await getDocs(qClass);
+    const activeYearResult = await getActiveAcademicYear();
+    if (activeYearResult.success && activeYearResult.data) {
+      const activeYearId = activeYearResult.data.id;
+      const qClass = query(
+        collection(db, "class"),
+        where("cursoId", "==", id),
+        where("anoLectivoId", "==", activeYearId),
+        where("isDeleted", "==", false),
+        limit(1),
+      );
+      const classSnap = await getDocs(qClass);
 
-    if (!classSnap.empty) {
-      return {
-        success: false,
-        error: "Edição negada: Este curso já possui histórico de turmas.",
-      };
+      if (!classSnap.empty) {
+        return {
+          success: false,
+          error:
+            "Edição negada: Este curso não pode ser alterado enquanto possuir turmas no ano lectivo activo.",
+        };
+      }
     }
 
     if (!(await isCodeUnique(code, id)))
@@ -89,19 +141,25 @@ export async function updateCourse(id, { name, code }) {
 
 export async function softDeleteCourse(id) {
   try {
-    const qActive = query(
-      collection(db, "class"),
-      where("courseId", "==", id),
-      where("status", "==", "ACTIVE"),
-      limit(1),
-    );
-    const activeSnap = await getDocs(qActive);
-
-    if (!activeSnap.empty) {
-      return {
-        success: false,
-        error: "Não é possível arquivar um curso com turmas ativas.",
-      };
+    // Restringir o delete para turmas activas
+    const activeYearResult = await getActiveAcademicYear();
+    if (activeYearResult.success && activeYearResult.data) {
+      const activeYearId = activeYearResult.data.id;
+      const qYear = query(
+        collection(db, "class"),
+        where("cursoId", "==", id),
+        where("anoLectivoId", "==", activeYearId),
+        where("isDeleted", "==", false),
+        limit(1),
+      );
+      const yearSnap = await getDocs(qYear);
+      if (!yearSnap.empty) {
+        return {
+          success: false,
+          error:
+            "Não é possível arquivar um curso com turmas no ano lectivo activo.",
+        };
+      }
     }
 
     await updateDoc(doc(db, "courses", id), {
@@ -163,39 +221,46 @@ export async function getCourses(includeArchived = true) {
       ? query(courseCollection)
       : query(courseCollection, where("isDelected", "==", false));
 
-    const [coursesSnapshot, coordinatorsResult, matrixSnapshot, hasActiveYear] =
+    const [coursesSnapshot, hasActiveYear, activeYearData, classesSnapshot] =
       await Promise.all([
         getDocs(q),
-        getActiveCoordinators(),
-        getDocs(collection(db, "matrixCourse")),
         hasActiveAcademicYear(),
+        getActiveAcademicYear(),
+        // Buscar todas as turmas para saber que cursos têm classes
+        getDocs(collection(db, "class")),
       ]);
+
+    // Buscar coordenadores apenas após ter os IDs dos cursos
+    const coordinatorsResult = await getCoordinatorsForCourses(
+      coursesSnapshot.docs.map((doc) => doc.id),
+    );
 
     const usersSnapshot = await getDocs(usersCollection);
     const users = usersSnapshot.docs.reduce(
       (acc, d) => ({ ...acc, [d.id]: d.data() }),
       {},
     );
-    const coursesWithMatrix = new Set(
-      matrixSnapshot.docs.map((d) => d.data().courseId),
-    );
+
+    const coursesWithClassesInActiveYear = new Set();
+
+    classesSnapshot.docs.forEach((classDoc) => {
+      const classData = classDoc.data();
+      if (!classData.cursoId || classData.isDeleted === true) return;
+
+      if (activeYearData && activeYearData.data) {
+        if (classData.anoLectivoId === activeYearData.data.id) {
+          coursesWithClassesInActiveYear.add(classData.cursoId);
+        }
+      }
+    });
 
     const coordinatorMap = coordinatorsResult.success
-      ? coordinatorsResult.data.reduce(
-          (acc, c) => ({
-            ...acc,
-            [c.courseId]: {
-              name: users[c.userId]?.nomeCompleto || "Desconhecido",
-            },
-          }),
-          {},
-        )
+      ? coordinatorsResult.data
       : {};
 
     const data = coursesSnapshot.docs.map((doc) => {
       const courseData = doc.data();
-      const hasCoord = !!coordinatorMap[doc.id];
-      const hasMatrix = coursesWithMatrix.has(doc.id);
+      const hasClassesInActiveYear = coursesWithClassesInActiveYear.has(doc.id);
 
       // LÓGICA DE ESTADO (Para os Badges da Imagem)
       let estado = "Configuração"; // Amarelo
@@ -203,14 +268,15 @@ export async function getCourses(includeArchived = true) {
         estado = "Arquivado"; // Cinza
       else if (!hasActiveYear)
         estado = "Inactivo"; // Cinza/Inactivo
-      else if (hasCoord && hasMatrix) estado = "Activo"; // Verde
+      else if (hasClassesInActiveYear && hasActiveYear) estado = "Activo"; // Verde - tem turmas E ano activo
 
       return {
         id: doc.id,
         ...courseData,
         coordinator: coordinatorMap[doc.id] || null,
+        hasHistory: hasClassesInActiveYear,
+        hasActiveClass: hasClassesInActiveYear,
         estado,
-        hasMatrix,
         academicYearActive: hasActiveYear,
       };
     });
@@ -245,7 +311,19 @@ export async function getInsights() {
 
 export async function hasCourseClasses(courseId) {
   try {
-    const q = query(collection(db, "class"), where("courseId", "==", courseId));
+    const activeYearResult = await getActiveAcademicYear();
+    if (!activeYearResult.success || !activeYearResult.data) {
+      return { success: true, hasClasses: false };
+    }
+
+    const activeYearId = activeYearResult.data.id;
+    const q = query(
+      collection(db, "class"),
+      where("cursoId", "==", courseId),
+      where("anoLectivoId", "==", activeYearId),
+      where("isDeleted", "==", false),
+      limit(1),
+    );
     const snapshot = await getDocs(q);
     return { success: true, hasClasses: !snapshot.empty };
   } catch (error) {

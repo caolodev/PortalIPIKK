@@ -77,7 +77,10 @@ export default function CourseTable({
                         {course.coordinator.name}
                       </p>
                       <p className="text-[9px] sm:text-[10px] md:text-[11px] text-gray-400 mt-0.5">
-                        Desde {course.coordinator.since}
+                        Desde{" "}
+                        {course.coordinator.startDate
+                          ? new Date(course.coordinator.startDate).getFullYear()
+                          : "Desconhecido"}
                       </p>
                     </div>
                   </div>
@@ -98,11 +101,18 @@ export default function CourseTable({
                 <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
                   <button
                     onClick={() => onEdit(course)}
-                    className="inline-flex items-center gap-1 sm:gap-1.5
+                    disabled={course.hasHistory}
+                    title={
+                      course.hasHistory
+                        ? "Este curso possui histórico e não pode ser editado."
+                        : undefined
+                    }
+                    className={`inline-flex items-center gap-1 sm:gap-1.5
                                text-[10px] sm:text-[11px] md:text-[12px]
                                text-[#0F2C59] border border-[#0F2C59]/20 rounded-md
                                bg-[#0F2C59]/5 px-1.5 sm:px-2 md:px-2.5 py-0.5 sm:py-1
-                               hover:bg-[#0F2C59]/10 transition-colors"
+                               hover:bg-[#0F2C59]/10 transition-colors
+                               disabled:text-gray-400 disabled:border-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
                   >
                     <FontAwesomeIcon
                       icon={faPenToSquare}
@@ -112,11 +122,18 @@ export default function CourseTable({
                   </button>
                   <button
                     onClick={() => onDeactivate(course)}
-                    className="inline-flex items-center gap-1 sm:gap-1.5
+                    disabled={course.hasActiveClass}
+                    title={
+                      course.hasActiveClass
+                        ? "Não é possível arquivar um curso com turmas ativas."
+                        : undefined
+                    }
+                    className={`inline-flex items-center gap-1 sm:gap-1.5
                                text-[10px] sm:text-[11px] md:text-[12px]
                                text-orange-600 border border-orange-200 rounded-md
                                px-1.5 sm:px-2 md:px-2.5 py-0.5 sm:py-1
-                               hover:bg-orange-50 transition-colors"
+                               hover:bg-orange-50 transition-colors
+                               disabled:text-gray-400 disabled:border-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
                   >
                     <FontAwesomeIcon
                       icon={faArchive}

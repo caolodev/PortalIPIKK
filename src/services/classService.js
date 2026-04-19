@@ -1,136 +1,135 @@
-import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  doc,
+  updateDoc,
+  deleteDoc,
+  limit,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getActiveAcademicYear } from "./academicYear";
+
 const classCollection = collection(db, "class");
 const templateCollection = collection(db, "classTemplates");
+const studentRecordsCollection = collection(db, "studentsRecords");
 
-function getCodeFromNomeExibicao(nomeExibicao) {
-  return nomeExibicao?.split("_")[1] || null;
-}
-function parseClasseFromCode(code) {
-  const match = code?.match(/(\d{2})/);
-  return match ? match[1] : null;
+// --- FUNÇÕES DE AUXILIARES (Mantidas e Reforçadas) ---
+
+export async function hasStudentsInClass(turmaId) {
+  try {
+    const q = query(
+      studentRecordsCollection,
+      where("turmaId", "==", turmaId),
+      limit(1),
+    );
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  } catch (error) {
+    console.error("Erro ao verificar alunos:", error);
+    return true; // Por segurança, bloqueia se houver erro
+  }
 }
 
-function parseTurnoFromCode(code) {
-  if (!code) return null;
-  if (code.endsWith("M")) return "Manhã";
-  if (code.endsWith("T")) return "Tarde";
-  return null;
-}
-
-async function getNextClassSigla(cursoId, classe) {
-  const q = query(templateCollection, where("cursoId", "==", cursoId));
+export async function getNextClassSigla(cursoId, classe) {
+  const q = query(
+    templateCollection,
+    where("cursoId", "==", cursoId),
+    where("classe", "==", classe),
+  );
   const snapshot = await getDocs(q);
   const siglas = snapshot.docs
-    .map((doc) => doc.data())
-    .filter((item) => item.classe === classe)
-    .map((item) => item.sigla || item.letra)
+    .map((d) => d.data().sigla)
     .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
+    .sort();
 
   const lastSigla = siglas[siglas.length - 1];
   return lastSigla ? String.fromCharCode(lastSigla.charCodeAt(0) + 1) : "A";
 }
 
 async function getActiveClassDirectors() {
-  try {
-    const q = query(
-      collection(db, "classRoles"),
-      where("role", "==", "DIRECTOR_TURMA"),
-    );
-    const snapshot = await getDocs(q);
-    const directors = snapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((item) => item.endDate === null);
-
-    return { success: true, data: directors };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
+  const q = query(
+    collection(db, "classRoles"),
+    where("role", "==", "DIRECTOR_TURMA"),
+    where("endDate", "==", null),
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
+
+// --- FUNÇÕES PRINCIPAIS ---
 
 export async function getClassesByCourse(cursoId, anoLectivoId) {
   try {
-    // 1. Buscar todas as turmas do curso e filtrar localmente por ano lectivo
-    const q = query(classCollection, where("cursoId", "==", cursoId));
-    const classSnapshot = await getDocs(q);
-    const classes = classSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((turma) => turma.anoLectivoId === anoLectivoId);
+    const [classSnap, templateSnap, directors, usersSnap, activeYearResult] =
+      await Promise.all([
+        getDocs(
+          query(
+            classCollection,
+            where("cursoId", "==", cursoId),
+            where("anoLectivoId", "==", anoLectivoId),
+            where("isDeleted", "==", false),
+          ),
+        ),
+        getDocs(query(templateCollection, where("cursoId", "==", cursoId))),
+        getActiveClassDirectors(),
+        getDocs(collection(db, "Users")),
+        getActiveAcademicYear(),
+      ]);
 
-    const templateSnapshot = await getDocs(
-      query(templateCollection, where("cursoId", "==", cursoId)),
+    const anoLectivoNome = activeYearResult.data?.name || "Ano Indefinido";
+    const isYearActive = !!activeYearResult.data;
+
+    const templates = templateSnap.docs.reduce(
+      (acc, d) => ({ ...acc, [d.id]: d.data() }),
+      {},
     );
-    const templateMap = templateSnapshot.docs.reduce((acc, doc) => {
-      acc[doc.id] = doc.data();
-      return acc;
-    }, {});
+    const users = usersSnap.docs.reduce(
+      (acc, d) => ({
+        ...acc,
+        [d.id]: d.data().nomeCompleto || d.data().name || "Sem Nome",
+      }),
+      {},
+    );
 
-    // 2. Buscar todos os diretores ativos e todos os usuários (para pegar nomes)
-    const [directorsResult, usersSnapshot] = await Promise.all([
-      getActiveClassDirectors(),
-      getDocs(collection(db, "Users")),
-    ]);
+    const directorMap = directors.reduce(
+      (acc, r) => ({
+        ...acc,
+        [r.turmaId]: {
+          name: users[r.userId],
+          userId: r.userId,
+          startDate: r.startDate,
+        },
+      }),
+      {},
+    );
 
-    // 3. Mapear usuários para busca rápida por ID
-    const usersMap = usersSnapshot.docs.reduce((acc, doc) => {
-      acc[doc.id] = doc.data().nomeCompleto || doc.data().name || "Sem Nome";
-      return acc;
-    }, {});
-
-    // 4. Mapear diretores para as turmas
-    const directorMap = directorsResult.success
-      ? directorsResult.data.reduce((acc, role) => {
-          acc[role.turmaId] = {
-            name: usersMap[role.userId] || "Sem Nome",
-            since: new Date(role.startDate).getFullYear(),
-            userId: role.userId,
-          };
-          return acc;
-        }, {})
-      : {};
-
-    const activeYearResult = await getActiveAcademicYear();
-    const academicYearActive =
-      activeYearResult.success && !!activeYearResult.data;
-
-    // 5. Unir as peças: Turma + director + status
-    const completeData = classes.map((turma) => {
-      const template = templateMap[turma.templateId] || {};
-      const code =
-        turma.nomeBase ||
-        template.nomeBase ||
-        getCodeFromNomeExibicao(turma.nomeExibicao);
-      const director = directorMap[turma.id] || null;
+    const initialData = classSnap.docs.map((d) => {
+      const turma = d.data();
+      const temp = templates[turma.templateId] || {};
       return {
+        id: d.id,
         ...turma,
-        nomeBase: turma.nomeBase || template.nomeBase || code || "-",
-        classe:
-          turma.classe || template.classe || parseClasseFromCode(code) || "-",
-        turno: turma.turno || template.turno || parseTurnoFromCode(code) || "-",
-        director,
-        academicYearActive,
-        active: academicYearActive && !!director,
+        nomeBase: temp.nomeBase || "N/A",
+        classe: temp.classe || "N/A",
+        turno: temp.turno || "N/A",
+        nomeExibicao: `${anoLectivoNome}_${temp.nomeBase || "N/A"}`,
+        director: directorMap[d.id] || null,
+        academicYearActive: isYearActive,
       };
     });
 
-    return { success: true, data: completeData };
-  } catch (error) {
-    console.error("Erro ao listar turmas:", error);
-    return { success: false, error: error.message };
-  }
-}
+    const data = await Promise.all(
+      initialData.map(async (turma) => ({
+        ...turma,
+        hasStudents: await hasStudentsInClass(turma.id),
+      })),
+    );
 
-export async function getClassTemplatesByCourse(cursoId) {
-  try {
-    const q = query(templateCollection, where("cursoId", "==", cursoId));
-    const snapshot = await getDocs(q);
-    const templates = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    return { success: true, data: templates };
+    return { success: true, data };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -142,17 +141,23 @@ export async function createClass({
   classe,
   turno,
   anoLectivo,
+  sigla: providedSigla,
+  nomeBase: providedNomeBase,
+  nomeExibicao: providedNomeExibicao,
 }) {
   try {
-    const sigla = await getNextClassSigla(cursoId, classe, turno);
-    const nomeBase = `${cursoCode}${classe}${sigla}${turno[0]}`.toUpperCase();
-    const anoExibicao =
-      anoLectivo?.name ||
-      generateAcademicYearName(anoLectivo?.startDate, anoLectivo?.endDate);
-    const nomeExibicao = `${anoExibicao}_${nomeBase}`;
+    const sigla = providedSigla || (await getNextClassSigla(cursoId, classe));
+    const nomeBase =
+      providedNomeBase ||
+      `${cursoCode}${classe}${sigla}${turno[0]}`.toUpperCase();
+    const nomeExibicao =
+      providedNomeExibicao || `${anoLectivo.name}_${nomeBase}`;
 
-    // 1. Garantir Template
-    const qTemp = query(templateCollection, where("nomeBase", "==", nomeBase));
+    const qTemp = query(
+      templateCollection,
+      where("nomeBase", "==", nomeBase),
+      where("cursoId", "==", cursoId),
+    );
     const tempSnap = await getDocs(qTemp);
     let templateId;
 
@@ -170,20 +175,73 @@ export async function createClass({
       templateId = tempSnap.docs[0].id;
     }
 
-    // 2. Criar Instância
     const docRef = await addDoc(classCollection, {
       templateId,
       cursoId,
       anoLectivoId: anoLectivo.id,
-      nomeBase,
-      classe,
-      turno,
       nomeExibicao,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      isDeleted: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
 
-    return { success: true, id: docRef.id, nome: nomeExibicao, nomeBase };
+    return { success: true, id: docRef.id, nomeBase };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// --- NOVAS FUNÇÕES DE EDIÇÃO E ELIMINAÇÃO ---
+
+export async function updateClass(id, academicYearActive, newData) {
+  try {
+    if (!academicYearActive)
+      throw new Error("Operação negada: O ano lectivo não está activo.");
+
+    const hasStudents = await hasStudentsInClass(id);
+    if (hasStudents)
+      throw new Error(
+        "Esta turma já possui alunos e não pode ser editada estruturalmente.",
+      );
+
+    await updateDoc(doc(db, "class", id), {
+      ...newData,
+      updatedAt: serverTimestamp(),
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteClass(id, academicYearActive) {
+  try {
+    if (!academicYearActive)
+      throw new Error("Operação negada: O ano lectivo não está activo.");
+
+    const hasStudents = await hasStudentsInClass(id);
+    if (hasStudents)
+      throw new Error(
+        "Não é possível eliminar uma turma com alunos Vinculados a ela.",
+      );
+
+    // Soft Delete
+    await updateDoc(doc(db, "class", id), {
+      isDeleted: true,
+      updatedAt: serverTimestamp(),
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getClassTemplatesByCourse(cursoId) {
+  try {
+    const q = query(templateCollection, where("cursoId", "==", cursoId));
+    const snapshot = await getDocs(q);
+    const templates = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return { success: true, data: templates };
   } catch (error) {
     return { success: false, error: error.message };
   }

@@ -3,6 +3,8 @@ import {
   faUserPlus,
   faUserMinus,
   faClockRotateLeft,
+  faPenToSquare,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import Avatar from "@/components/CourseTable/Avatar";
 import StatusBadge from "@/components/CourseTable/StatusBadge";
@@ -17,11 +19,27 @@ function formatTurno(turno) {
   return turno;
 }
 
+function renderDerivedField(value) {
+  if (!value || value === "N/A") {
+    return (
+      <span
+        className="text-[10px] sm:text-[11px] md:text-[12px] text-orange-600 font-medium"
+        title="Verifique o vínculo com o classTemplate"
+      >
+        N/A
+      </span>
+    );
+  }
+  return value;
+}
+
 export default function ClassTable({
   classes,
   onBind,
   onUnbind,
   onHistory,
+  onEdit,
+  onDelete,
   actionLoading,
 }) {
   return (
@@ -33,9 +51,9 @@ export default function ClassTable({
               "TURMA",
               "CLASSE",
               "TURNO",
-              "director DE TURMA",
+              "DIRECTOR DE TURMA",
               "ESTADO",
-              "acções",
+              "ACÇÕES",
             ].map((heading) => (
               <th
                 key={heading}
@@ -65,7 +83,9 @@ export default function ClassTable({
                 >
                   <td className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
                     <p className="text-[11px] sm:text-[12px] md:text-[13.5px] font-medium text-gray-900 leading-tight">
-                      {turma.nomeBase || turma.nomeExibicao}
+                      {turma.nomeBase && turma.nomeBase !== "N/A"
+                        ? turma.nomeBase
+                        : turma.nomeExibicao || renderDerivedField("N/A")}
                     </p>
                     <p className="text-[9px] sm:text-[10px] md:text-[11px] text-gray-400 mt-0.5">
                       Criado em {new Date(turma.createdAt).getFullYear()}
@@ -73,7 +93,9 @@ export default function ClassTable({
                   </td>
                   <td className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
                     <span className="text-[10px] sm:text-[11px] md:text-[12px] text-gray-500 bg-gray-100 border border-gray-200 rounded-md px-2 py-1">
-                      {formatClasse(turma.classe)}
+                      {turma.classe && turma.classe !== "N/A"
+                        ? formatClasse(turma.classe)
+                        : renderDerivedField("N/A")}
                     </span>
                   </td>
                   <td className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
@@ -90,7 +112,10 @@ export default function ClassTable({
                             {turma.director.name}
                           </p>
                           <p className="text-[9px] sm:text-[10px] md:text-[11px] text-gray-400 mt-0.5">
-                            Desde {turma.director.since}
+                            Desde{" "}
+                            {turma.director.startDate
+                              ? new Date(turma.director.startDate).getFullYear()
+                              : "Desconhecido"}
                           </p>
                         </div>
                       </div>
@@ -133,6 +158,50 @@ export default function ClassTable({
                           <span className="hidden sm:inline">Vincular</span>
                         </button>
                       )}
+                      <button
+                        onClick={() => onEdit?.(turma)}
+                        disabled={
+                          actionLoading ||
+                          !turma.academicYearActive ||
+                          turma.hasStudents
+                        }
+                        title={
+                          !turma.academicYearActive
+                            ? "Turma de ano lectivo encerrado"
+                            : turma.hasStudents
+                              ? "Turma com alunos não pode ser editada"
+                              : undefined
+                        }
+                        className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] md:text-[12px] text-[#0F2C59] border border-[#0F2C59]/20 rounded-md bg-[#0F2C59]/5 px-1.5 sm:px-2 md:px-2.5 py-0.5 sm:py-1 hover:bg-[#0F2C59]/10 transition-colors disabled:text-gray-400 disabled:border-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <FontAwesomeIcon
+                          icon={faPenToSquare}
+                          className="text-[9px] sm:text-[10px]"
+                        />
+                        <span className="hidden sm:inline">Editar</span>
+                      </button>
+                      <button
+                        onClick={() => onDelete?.(turma)}
+                        disabled={
+                          actionLoading ||
+                          !turma.academicYearActive ||
+                          turma.hasStudents
+                        }
+                        title={
+                          !turma.academicYearActive
+                            ? "Turma de ano lectivo encerrado"
+                            : turma.hasStudents
+                              ? "Turma com alunos não pode ser eliminada"
+                              : undefined
+                        }
+                        className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] md:text-[12px] text-red-600 border border-red-200 rounded-md px-1.5 sm:px-2 md:px-2.5 py-0.5 sm:py-1 hover:bg-red-50 transition-colors disabled:text-gray-400 disabled:border-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <FontAwesomeIcon
+                          icon={faTrash}
+                          className="text-[10px] sm:text-[11px]"
+                        />
+                        <span className="hidden sm:inline">Eliminar</span>
+                      </button>
                       <button
                         onClick={() => onHistory(turma)}
                         className="w-6 h-6 sm:w-7 sm:h-7 rounded-md border border-gray-200 text-gray-400 hover:bg-gray-100 flex items-center justify-center transition-colors"

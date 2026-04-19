@@ -32,7 +32,7 @@ function calculateStatus(startDate, endDate) {
 export function generateNameYear(startDate, endDate) {
   const sYear = new Date(startDate).getFullYear();
   const eYear = new Date(endDate).getFullYear();
-  return sYear === eYear ? `${sYear}` : `${sYear} - ${eYear}`;
+  return sYear === eYear ? `${sYear}` : `${sYear}-${eYear}`;
 }
 
 // --- CRUD COM REGRAS DE INTEGRIDADE ---

@@ -3,7 +3,7 @@ import { faGraduationCap, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { updateCourse } from "@/services/courseService";
+import { updateCourse, hasCourseClasses } from "@/services/courseService";
 
 export default function EditCourse({
   setIsOpen,
@@ -15,17 +15,43 @@ export default function EditCourse({
   const [name, setName] = useState(course.name || "");
   const [code, setCode] = useState(course.code || "");
   const [loading, setLoading] = useState(false);
+  const [hasHistory, setHasHistory] = useState(course.hasHistory || false);
 
   useEffect(() => {
     setName(course.name || "");
     setCode(course.code || "");
+    setHasHistory(course.hasHistory || false);
   }, [course]);
+
+  useEffect(() => {
+    if (isCheckingHistory) {
+      const checkHistory = async () => {
+        try {
+          const result = await hasCourseClasses(course.id);
+          if (!result.success) {
+            toast.error(
+              result.error || "Erro ao verificar histórico do curso.",
+            );
+            setIsOpen(false);
+            return;
+          }
+          setHasHistory(result.hasClasses);
+        } catch (error) {
+          toast.error("Erro ao verificar histórico do curso.");
+          setIsOpen(false);
+        } finally {
+          // Note: isCheckingHistory is not set to false here, as it's a prop
+        }
+      };
+      checkHistory();
+    }
+  }, [isCheckingHistory, course.id, setIsOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (isHistoric) {
+      if (hasHistory) {
         toast.error(
           "Identidade do curso preservada devido ao histórico académico.",
         );

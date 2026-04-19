@@ -41,6 +41,8 @@ export default function Cursos() {
   const [isCheckingHistory, setIsCheckingHistory] = useState(false);
   const [courseToDeactivate, setCourseToDeactivate] = useState(null);
   const [isDeactivating, setIsDeactivating] = useState(false);
+  const [coordinatorToUnbind, setCoordinatorToUnbind] = useState(null);
+  const [isUnbinding, setIsUnbinding] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
@@ -103,39 +105,32 @@ export default function Cursos() {
       toast.error("Este curso não possui coordenador para desvincular.");
       return;
     }
+    setCoordinatorToUnbind(course);
+  };
 
-    const confirmDesvincular = window.confirm(
-      `Tem certeza que deseja desvincular ${course.coordinator.name} do curso ${course.name}?`,
-    );
-
-    if (!confirmDesvincular) return;
-
+  const handleConfirmUnbind = async () => {
+    if (!coordinatorToUnbind) return;
+    setIsUnbinding(true);
     try {
-      const result = await unbindCoordinator(course.id);
+      const result = await unbindCoordinator(coordinatorToUnbind.id);
       if (result.success) {
         toast.success("Coordenador desvinculado com sucesso!");
-        fetchData(); // Recarregar dados
+        fetchData();
+        setCoordinatorToUnbind(null);
       } else {
         toast.error(result.error || "Erro ao desvincular coordenador.");
       }
     } catch (error) {
       toast.error("Erro ao desvincular coordenador.");
       console.error("Error unbinding coordinator:", error);
+    } finally {
+      setIsUnbinding(false);
     }
   };
 
-  const handleEditCourse = async (course) => {
+  const handleEditCourse = (course) => {
+    setEditingCourse({ ...course, hasHistory: false });
     setIsCheckingHistory(true);
-    try {
-      const result = await hasCourseClasses(course.id);
-      if (!result.success) {
-        toast.error(result.error || "Erro ao verificar histórico do curso.");
-        return;
-      }
-      setEditingCourse({ ...course, hasHistory: result.hasClasses });
-    } finally {
-      setIsCheckingHistory(false);
-    }
   };
 
   const closeEditCourse = () => {
@@ -402,6 +397,42 @@ export default function Cursos() {
                 className="w-full sm:w-auto rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
               >
                 Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {coordinatorToUnbind && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div
+            className="absolute inset-0 bg-black/20"
+            onClick={() => setCoordinatorToUnbind(null)}
+          />
+          <div className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-xl p-6">
+            <h2 className="text-xl font-semibold text-[#0F2C59] mb-4">
+              Desvincular Coordenador?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Tem a certeza que deseja desvincular o coordenador{" "}
+              <strong>{coordinatorToUnbind.coordinator?.name}</strong> do curso{" "}
+              <strong>{coordinatorToUnbind.name}</strong>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCoordinatorToUnbind(null)}
+                className="flex-1 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmUnbind}
+                disabled={isUnbinding}
+                className="flex-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUnbinding ? "Desvinculando..." : "Desvincular"}
               </button>
             </div>
           </div>

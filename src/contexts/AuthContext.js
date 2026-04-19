@@ -18,6 +18,7 @@ import {
   collection,
   getDocs,
 } from "firebase/firestore";
+
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -68,35 +69,99 @@ export function AuthProvider({ children }) {
     const preUserRef = doc(db, "preUsers", process);
     const preUserSnap = await getDoc(preUserRef);
 
-    if (!preUserSnap.exists()) {
-      throw new Error("Processo não encontrado. Verifique o número.");
-    }
-
+    // 1. Validação Básica do preUser
+    if (!preUserSnap.exists()) throw new Error("Processo não encontrado.");
     const dados = preUserSnap.data();
-    const partes = dados.nomeCompleto.split(" ");
-    const firstNameDB = partes[0].toLowerCase();
-    const lastNameDB = partes.slice(-1)[0].toLowerCase();
 
+    // 2. Validação de Nome
+    const partes = dados.nomeCompleto.split(" ");
     if (
-      firstNameDB !== firstName.toLowerCase() ||
-      lastNameDB !== lastName.toLowerCase()
+      partes[0].toLowerCase() !== firstName.toLowerCase() ||
+      partes.slice(-1)[0].toLowerCase() !== lastName.toLowerCase()
     ) {
       throw new Error("Nomes não correspondem ao processo.");
     }
 
-    // verificar um email válido antes de criar o usuário
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error("Email inválido.");
-    }
-
-    // verficar o email como unique antes de criar o usuário
+    // 3. Validação de Unicidade (Email, Nome, Processo) antes de criar Auth
+    // (Otimize fazendo estas checagens em paralelo se desejar)
     const qEmail = query(usersRef, where("email", "==", email));
-    const queryEmailSnapshot = await getDocs(qEmail);
+    const qProcess = query(usersRef, where("processo", "==", process));
+    const [emailSnap, processSnap] = await Promise.all([
+      getDocs(qEmail),
+      getDocs(qProcess),
+    ]);
 
-    if (!queryEmailSnapshot.empty) {
-      throw new Error("Este email já está em uso.");
+    if (!emailSnap.empty) throw new Error("Este email já está em uso.");
+    if (!processSnap.empty) throw new Error("Este processo já está em uso.");
+
+    // --- BLOCO CRÍTICO: VALIDAÇÃO DE TURMA E IDs (ANTES DO AUTH) ---
+    let cursoIdReal = null;
+    let turmaIdReal = null;
+    let anoLectivoIdReal = null;
+    let classeReal = null;
+
+    if (dados.cursoRef) {
+      const qCurso = query(
+        collection(db, "courses"),
+        where("code", "==", dados.cursoRef),
+      );
+      const cursoSnap = await getDocs(qCurso);
+      if (cursoSnap.empty)
+        throw new Error("Erro ao identificar CursoID: Curso não encontrado.");
+      cursoIdReal = cursoSnap.docs[0].id;
     }
+
+    if (dados.role === "ALUNO") {
+      const turmaString = dados.turmaInicial; // Ex: "2025-2026_INF10BT"
+      if (!turmaString)
+        throw new Error(
+          "Erro ao identificar TurmaID: Turma não atribuída no pré-registo.",
+        );
+
+      const [anoNomePre, nomeBasePre] = turmaString.split("_");
+      // A) Buscar o ID do Ano pelo Nome
+      const qAno = query(
+        collection(db, "academicYears"),
+        where("name", "==", anoNomePre),
+      );
+      const anoSnap = await getDocs(qAno);
+      if (anoSnap.empty)
+        throw new Error(`Erro ao identificar TurmaID: Ano lectivo Incorreto.`);
+      anoLectivoIdReal = anoSnap.docs[0].id;
+
+      // B) Buscar o Template para pegar a classe e o ID do template
+      const qTemp = query(
+        collection(db, "classTemplates"),
+        where("nomeBase", "==", nomeBasePre),
+      );
+      const tempSnap = await getDocs(qTemp);
+      if (tempSnap.empty)
+        throw new Error(
+          `Erro ao identificar TurmaID: A estrutura da turma Incorrecta.`,
+        );
+      const templateId = tempSnap.docs[0].id;
+      classeReal = tempSnap.docs[0].data().classe;
+
+      // C) Buscar a Instância da Turma (class) Ativa
+      const qTurma = query(
+        collection(db, "class"),
+        where("templateId", "==", templateId),
+        where("anoLectivoId", "==", anoLectivoIdReal),
+        where("isDeleted", "==", false), // TRAVA: Se for true, não cria conta
+      );
+      const turmaSnap = await getDocs(qTurma);
+
+      if (turmaSnap.empty) {
+        throw new Error(
+          "Esta turma não está disponível ou foi desativada para o ano lectivo atual.",
+        );
+      }
+
+      turmaIdReal = turmaSnap.docs[0].id;
+    }
+
+    // --- FIM DAS VALIDAÇÕES: SE CHEGOU AQUI, PODEMOS CRIAR A CONTA ---
+
     let userCredential;
     try {
       userCredential = await createUserWithEmailAndPassword(
@@ -105,84 +170,42 @@ export function AuthProvider({ children }) {
         password,
       );
     } catch (error) {
-      if (error.code === "auth/email-already-in-use") {
-        throw new Error("Este email já está em uso.");
-      } else if (error.code === "auth/invalid-email") {
-        throw new Error("Email inválido.");
-      } else if (error.code === "auth/weak-password") {
-        throw new Error("Senha muito fraca. Use pelo menos 6 caracteres.");
-      } else {
-        throw new Error("Erro ao criar conta. Tente novamente.");
-      }
+      const errorMap = {
+        "auth/email-already-in-use": "Este email já está em uso.",
+        "auth/weak-password": "Senha muito fraca.",
+      };
+      throw new Error(errorMap[error.code] || "Erro ao criar credenciais.");
     }
 
-    // Verificar o nomeCompleto como unique antes de criar o usuário
-    const q = query(usersRef, where("nomeCompleto", "==", dados.nomeCompleto));
-    const querySnapshot = await getDocs(q);
+    const userUid = userCredential.user.uid;
 
-    if (!querySnapshot.empty) {
-      throw new Error("Este nome já está em uso.");
-    }
-    // verificar o processo como unique antes de criar o usuário
-    const qProcess = query(usersRef, where("processo", "==", process));
-    const queryProcessSnapshot = await getDocs(qProcess);
-
-    if (!queryProcessSnapshot.empty) {
-      throw new Error("Este processo já está em uso.");
-    }
-
-    // verificar o processo como unique antes de criar o usuário
-    const qProcessPre = query(usersRef, where("processo", "==", process));
-    const queryProcessPreSnapshot = await getDocs(qProcessPre);
-
-    if (!queryProcessPreSnapshot.empty) {
-      throw new Error("Este processo já está em uso.");
-    }
-
-    // criar o usuário no Firebase Authentication
-    await setDoc(doc(db, "Users", userCredential.user.uid), {
+    // 4. Salvar Usuário
+    await setDoc(doc(db, "Users", userUid), {
       nomeCompleto: dados.nomeCompleto,
-      processo: process, // Validador de aluno
-      email: email,
+      processo: process,
+      email,
       role: dados.role,
       status: true,
+      isDeleted: false,
       cursoId: dados.cursoRef || null,
       createdAt: new Date(),
     });
 
-    // Matricular o aluno
+    // 5. Salvar Matrícula (Já temos os IDs validados acima)
     if (dados.role === "ALUNO") {
-      const turmaId = dados.turmaInicial || null;
-      const cursoId = dados.cursoRef || null;
-      const regex = /^(\d{4}-\d{4})_.*(\d{2})/;
-      const match = turmaId.match(regex);
-      const anoLectivo = match ? match[1] : null;
-      const classe = match ? parseInt(match[2]) : null;
-
-      const q = query(
-        collection(db, "studentsRecords"),
-        where("processo", "==", process),
-        where("anoLectivo", "==", anoLectivo),
-      );
-
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        throw new Error("Este aluno já está matriculado.");
-      }
-
-      await setDoc(doc(db, "studentsRecords", userCredential.user.uid), {
+      await setDoc(doc(db, "studentsRecords", userUid), {
+        userId: userUid,
         processo: process,
-        turmaId,
-        cursoId,
-        anoLectivo,
-        classe,
+        turmaId: turmaIdReal, // Agora é o ID Real (kenokhQm...)
+        anoLectivoId: anoLectivoIdReal,
+        cursoId: cursoIdReal,
+        classe: classeReal,
         estadoFinal: null,
         createdAt: new Date(),
       });
     }
-
-    await signOut(auth);
-    setUser(null);
+    await logout(); // Força o logout para evitar problemas de estado
+    return true;
   }
 
   async function login(email, password) {

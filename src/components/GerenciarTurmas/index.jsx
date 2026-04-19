@@ -15,7 +15,13 @@ import ClassTable from "@/components/GerenciarTurmas/ClassTable";
 import NewClassModal from "@/components/GerenciarTurmas/NewClassModal";
 import BindDirectorModal from "@/components/GerenciarTurmas/BindDirectorModal";
 import HistoryModal from "@/components/GerenciarTurmas/HistoryModal";
-import { getClassesByCourse, createClass } from "@/services/classService";
+import {
+  getClassesByCourse,
+  createClass,
+  updateClass,
+  deleteClass,
+  hasStudentsInClass,
+} from "@/services/classService";
 import {
   bindClassDirector,
   unbindClassDirector,
@@ -35,6 +41,12 @@ export default function GerenciarTurmas() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [newClassOpen, setNewClassOpen] = useState(false);
+  const [editClassOpen, setEditClassOpen] = useState(false);
+  const [editTurma, setEditTurma] = useState(null);
+  const [editTurmaHasStudents, setEditTurmaHasStudents] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteHasStudents, setDeleteHasStudents] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [bindModal, setBindModal] = useState({ open: false, turma: null });
   const [historyModal, setHistoryModal] = useState({
     open: false,
@@ -42,6 +54,8 @@ export default function GerenciarTurmas() {
     entries: [],
   });
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [directorToUnbind, setDirectorToUnbind] = useState(null);
+  const [isUnbindingDirector, setIsUnbindingDirector] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -151,16 +165,26 @@ export default function GerenciarTurmas() {
     setLoading(false);
   };
 
-  const handleCreateClass = async ({ classe, turno }) => {
+  const handleCreateClass = async ({
+    classe,
+    turno,
+    courseCode,
+    sigla,
+    nomeBase,
+    nomeExibicao,
+  }) => {
     if (!course || !activeYear) return;
     setActionLoading(true);
     try {
       const result = await createClass({
         cursoId: course.id,
-        cursoCode: course.code,
+        cursoCode: courseCode || course.code,
         classe,
         turno,
         anoLectivo: activeYear,
+        sigla,
+        nomeBase,
+        nomeExibicao,
       });
       if (!result.success) {
         toast.error(result.error || "Erro ao criar turma.");
@@ -176,24 +200,115 @@ export default function GerenciarTurmas() {
     }
   };
 
-  const handleUnbind = async (turma) => {
-    const confirmed = window.confirm(
-      `Desvincular o director da turma ${turma.nomeExibicao}?`,
-    );
-    if (!confirmed) return;
+  const handleOpenEdit = async (turma) => {
+    setEditTurma(turma);
+    setEditClassOpen(true);
+    // Verificar estudantes em background
+    try {
+      const students = await hasStudentsInClass(turma.id);
+      setEditTurmaHasStudents(students);
+    } catch (error) {
+      toast.error("Erro ao verificar estado da turma.");
+      console.error(error);
+    }
+  };
+
+  const handleUpdateClass = async ({
+    classe,
+    turno,
+    courseCode,
+    sigla,
+    nomeBase,
+    nomeExibicao,
+  }) => {
+    if (!editTurma) return;
     setActionLoading(true);
     try {
-      const result = await unbindClassDirector(turma.id);
+      const result = await updateClass(
+        editTurma.id,
+        editTurma.academicYearActive,
+        {
+          classe,
+          turno,
+          courseCode,
+          sigla,
+          nomeBase,
+          nomeExibicao,
+        },
+      );
       if (!result.success) {
-        toast.error(result.error || "Erro ao desvincular director de turma.");
+        toast.error(result.error || "Erro ao atualizar turma.");
       } else {
-        toast.success("director de turma desvinculado com sucesso.");
+        toast.success("Turma atualizada com sucesso.");
+        setEditClassOpen(false);
+        setEditTurma(null);
+        setEditTurmaHasStudents(false);
         await refreshClasses();
       }
     } catch (error) {
-      toast.error("Erro ao desvincular director de turma.");
+      toast.error("Erro ao atualizar turma.");
+      console.error(error);
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleDeleteRequest = async (turma) => {
+    setDeleteConfirm(turma);
+    // Verificar estudantes em background
+    try {
+      const students = await hasStudentsInClass(turma.id);
+      setDeleteHasStudents(students);
+    } catch (error) {
+      toast.error("Erro ao verificar estado da turma.");
+      console.error(error);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+    setIsDeleting(true);
+    try {
+      const result = await deleteClass(
+        deleteConfirm.id,
+        deleteConfirm.academicYearActive,
+      );
+      if (!result.success) {
+        toast.error(result.error || "Erro ao eliminar turma.");
+      } else {
+        toast.success("Turma eliminada com sucesso.");
+        setDeleteConfirm(null);
+        await refreshClasses();
+      }
+    } catch (error) {
+      toast.error("Erro ao eliminar turma.");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleUnbind = async (turma) => {
+    setDirectorToUnbind(turma);
+  };
+
+  const handleConfirmUnbind = async () => {
+    if (!directorToUnbind) return;
+    setIsUnbindingDirector(true);
+    try {
+      const result = await unbindClassDirector(directorToUnbind.id);
+      if (!result.success) {
+        toast.error(result.error || "Erro ao desvincular director de turma.");
+      } else {
+        toast.success("Director de turma desvinculado com sucesso.");
+        await refreshClasses();
+        setDirectorToUnbind(null);
+      }
+    } catch (error) {
+      toast.error("Erro ao desvincular director de turma.");
+      console.error("Error unbinding director:", error);
+    } finally {
+      setIsUnbindingDirector(false);
     }
   };
 
@@ -323,6 +438,8 @@ export default function GerenciarTurmas() {
         classes={displayedClasses}
         onBind={(turma) => setBindModal({ open: true, turma })}
         onUnbind={handleUnbind}
+        onEdit={handleOpenEdit}
+        onDelete={handleDeleteRequest}
         onHistory={handleHistory}
         actionLoading={actionLoading}
       />
@@ -338,11 +455,109 @@ export default function GerenciarTurmas() {
 
       {newClassOpen && (
         <NewClassModal
+          mode="create"
+          courseCode={course?.code}
+          courseId={course?.id}
+          activeYearName={activeYear?.name}
+          academicYearActive={!!activeYear}
           onClose={() => setNewClassOpen(false)}
-          onCreate={handleCreateClass}
+          onSubmit={handleCreateClass}
           loading={actionLoading}
+          submitLabel="Criar Turma"
+          disableSubmit={!activeYear}
+          disableReason={
+            !activeYear
+              ? "Não é possível criar turmas sem um ano lectivo activo."
+              : undefined
+          }
         />
       )}
+
+      {editClassOpen && editTurma && (
+        <NewClassModal
+          mode="edit"
+          courseCode={course?.code}
+          activeYearName={activeYear?.name}
+          academicYearActive={editTurma.academicYearActive}
+          initialData={{ classe: editTurma.classe, turno: editTurma.turno }}
+          onClose={() => {
+            setEditClassOpen(false);
+            setEditTurma(null);
+            setEditTurmaHasStudents(false);
+          }}
+          onSubmit={handleUpdateClass}
+          loading={actionLoading}
+          submitLabel="Guardar Alterações"
+          disableSubmit={!editTurma.academicYearActive || editTurmaHasStudents}
+          disableReason={
+            editTurmaHasStudents
+              ? "Esta turma não pode ser alterada porque possui alunos matriculados."
+              : !editTurma.academicYearActive
+                ? "Esta turma não pode ser alterada porque pertence a um ano lectivo encerrado."
+                : undefined
+          }
+        />
+      )}
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => setDeleteConfirm(null)}
+          />
+          <div className="relative bg-white rounded-xl border border-gray-200 w-full max-w-md mx-4 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <h2 className="text-base font-semibold text-red-700">
+                Confirmar eliminação de turma
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Tem certeza que deseja eliminar a turma{" "}
+                <strong>{deleteConfirm.nomeExibicao}</strong>? Esta ação é
+                irreversível e só pode ser feita se não houver alunos
+                vinculados.
+              </p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              {deleteHasStudents || !deleteConfirm.academicYearActive ? (
+                <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+                  {deleteHasStudents
+                    ? "Não é possível eliminar esta turma porque existem alunos vinculados."
+                    : "Não é possível eliminar esta turma porque pertence a um ano lectivo encerrado."}
+                </div>
+              ) : null}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={
+                    isDeleting ||
+                    deleteHasStudents ||
+                    !deleteConfirm.academicYearActive
+                  }
+                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? (
+                    <>
+                      <FontAwesomeIcon icon={faSpinner} spin /> Eliminando...
+                    </>
+                  ) : (
+                    "Confirmar Eliminação"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {bindModal.open && (
         <BindDirectorModal
           turma={bindModal.turma}
@@ -362,6 +577,48 @@ export default function GerenciarTurmas() {
             setHistoryModal({ open: false, turma: null, entries: [] })
           }
         />
+      )}
+
+      {directorToUnbind && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div
+            className="absolute inset-0 bg-black/20"
+            onClick={() => setDirectorToUnbind(null)}
+          />
+          <div className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-xl p-6">
+            <h2 className="text-xl font-semibold text-[#0F2C59] mb-4">
+              Desvincular Director?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Tem a certeza que deseja desvincular o director da turma{" "}
+              <strong>{directorToUnbind.nomeExibicao}</strong>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={isUnbindingDirector}
+                onClick={() => setDirectorToUnbind(null)}
+                className="flex-1 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmUnbind}
+                disabled={isUnbindingDirector}
+                className="flex-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUnbindingDirector ? (
+                  <>
+                    <FontAwesomeIcon icon={faSpinner} spin /> Desvinculando...
+                  </>
+                ) : (
+                  "Desvincular"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
