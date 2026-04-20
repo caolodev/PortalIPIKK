@@ -13,6 +13,9 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { validateAcademicQuarter } from "./validateNewQuarter";
+import { getActiveAcademicYear } from "./academicYear";
+
+const { data: activeYearData } = await getActiveAcademicYear();
 
 const quarterCollection = collection(db, "academicQuarters");
 
@@ -26,6 +29,26 @@ function calculateQuarterStatus(startDate, endDate, yearStatus) {
   if (now < start) return "INACTIVE";
   if (now > end) return "CLOSED";
   return "ACTIVE";
+}
+
+export async function getActiveAcademicQuarter() {
+  try {
+    const snapshot = await getDocs(quarterCollection);
+    const activeQuarters = snapshot.docs
+      .map((d) => ({
+        id: d.id,
+        ...d.data(),
+        status: calculateQuarterStatus(
+          d.data().startDate,
+          d.data().endDate,
+          activeYearData.status,
+        ),
+      }))
+      .find((q) => q.status === "ACTIVE");
+    return { success: true, data: activeQuarters || null };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
 
 export async function createAcademicQuarter(data) {

@@ -22,6 +22,7 @@ import PageHeader from "@/components/PageHeader";
 import ClassFilter from "@/components/ProfessorAssignments/ClassFilter";
 import AssignmentTable from "@/components/ProfessorAssignments/AssignmentTable";
 import TeacherAssignmentModal from "@/components/ProfessorAssignments/TeacherAssignmentModal";
+import PaginationControls from "@/components/PaginationControls";
 
 const GRADE_OPTIONS = [10, 11, 12, 13];
 const ALL_GRADES = "all";
@@ -49,6 +50,8 @@ export default function ProfessorAssignmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProfessor, setSelectedProfessor] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 5;
 
   // Per-class assignment counts (for card badges)
   const [classCounts, setClassCounts] = useState({});
@@ -80,6 +83,12 @@ export default function ProfessorAssignmentsPage() {
       return name.includes(normalized);
     });
   }, [professors, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+  const displayedRows = rows.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage,
+  );
 
   const totalSubjects = rows.length;
   const assignedCount = rows.filter((row) => row.activeTeacher).length;
@@ -165,6 +174,10 @@ export default function ProfessorAssignmentsPage() {
       setSelectedTurma(nextTurma || null);
     }
   }, [selectedGrade, classes, selectedTurma]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTurma]);
 
   useEffect(() => {
     if (!course || !selectedTurma || !academicYear) {
@@ -470,12 +483,28 @@ export default function ProfessorAssignmentsPage() {
 
         {/* Subjects table panel */}
         {selectedTurma ? (
-          <AssignmentTable
-            rows={rows}
-            onAssign={handleOpenAssignment}
-            loading={tableLoading}
-            directorId={selectedTurma?.director?.userId}
-          />
+          <>
+            <AssignmentTable
+              displayedRows={displayedRows}
+              onAssign={handleOpenAssignment}
+              loading={tableLoading}
+              directorId={selectedTurma?.director?.userId}
+            />
+            {rows.length > 0 && (
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                itemsCount={rows.length}
+                itemName="disciplinas"
+                onPrevious={() =>
+                  setCurrentPage((prev) => Math.max(prev - 1, 1))
+                }
+                onNext={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+              />
+            )}
+          </>
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-14 text-center text-sm text-slate-400">
             Selecione uma turma acima para carregar a matriz curricular.

@@ -11,7 +11,7 @@ import Avatar from "./Avatar";
 import StatusBadge from "./StatusBadge";
 
 export default function CourseTable({
-  courses,
+  displayedCourses,
   onVincular,
   onEdit,
   onDeactivate,
@@ -40,7 +40,7 @@ export default function CourseTable({
         </thead>
 
         <tbody className="bg-white">
-          {courses.map((course, i) => (
+          {displayedCourses.map((course, i) => (
             <tr
               key={course.id}
               className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-100"

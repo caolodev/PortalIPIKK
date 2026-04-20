@@ -2,6 +2,7 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   query,
   where,
   doc,
@@ -31,6 +32,32 @@ export async function hasStudentsInClass(turmaId) {
   } catch (error) {
     console.error("Erro ao verificar alunos:", error);
     return true; // Por segurança, bloqueia se houver erro
+  }
+}
+
+export async function getStudentCountByClassId(turmaId) {
+  try {
+    const q = query(studentRecordsCollection, where("turmaId", "==", turmaId));
+    const snapshot = await getDocs(q);
+    return snapshot.size;
+  } catch (error) {
+    console.error("Erro ao contar alunos da turma:", error);
+    return 0;
+  }
+}
+
+export async function getStudentCountsByClassIds(turmaIds) {
+  try {
+    const counts = {};
+    await Promise.all(
+      turmaIds.map(async (turmaId) => {
+        counts[turmaId] = await getStudentCountByClassId(turmaId);
+      }),
+    );
+    return { success: true, data: counts };
+  } catch (error) {
+    console.error("Erro ao buscar contagem de alunos:", error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -242,6 +269,37 @@ export async function getClassTemplatesByCourse(cursoId) {
     const snapshot = await getDocs(q);
     const templates = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     return { success: true, data: templates };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getClassById(id) {
+  try {
+    const docRef = doc(db, "class", id);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) throw new Error("Turma não encontrada.");
+
+    const turma = { id: docSnap.id, ...docSnap.data() };
+    if (turma.templateId) {
+      const templateSnap = await getDoc(
+        doc(templateCollection, turma.templateId),
+      );
+      if (templateSnap.exists()) {
+        const temp = templateSnap.data();
+        turma.nomeBase = temp.nomeBase || turma.nomeBase;
+        turma.classe = temp.classe || turma.classe;
+        turma.turno = temp.turno || turma.turno;
+        turma.sigla = temp.sigla || turma.sigla;
+      }
+    }
+
+    // Buscar ano lectivo ativo para nomeExibicao
+    const activeYearResult = await getActiveAcademicYear();
+    const anoLectivoNome = activeYearResult.data?.name || "Ano Indefinido";
+    turma.nomeExibicao = `${anoLectivoNome}_${turma.nomeBase || "N/A"}`;
+
+    return { success: true, data: turma };
   } catch (error) {
     return { success: false, error: error.message };
   }

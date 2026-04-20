@@ -15,7 +15,7 @@ function getInitials(name) {
 }
 
 export default function AssignmentTable({
-  rows,
+  displayedRows,
   onAssign,
   loading,
   directorId,
@@ -23,8 +23,8 @@ export default function AssignmentTable({
   const [openHistoryId, setOpenHistoryId] = useState(null);
 
   const historyRow = useMemo(
-    () => rows.find((row) => row.subjectId === openHistoryId) || null,
-    [openHistoryId, rows],
+    () => displayedRows.find((row) => row.subjectId === openHistoryId) || null,
+    [openHistoryId, displayedRows],
   );
 
   const historyEntries = useMemo(() => {
@@ -60,7 +60,7 @@ export default function AssignmentTable({
     );
   }
 
-  if (rows.length === 0) {
+  if (displayedRows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
         Nenhuma disciplina encontrada para esta turma.
@@ -89,7 +89,7 @@ export default function AssignmentTable({
             </tr>
           </thead>
           <tbody className="bg-white">
-            {rows.map((row) => (
+            {displayedRows.map((row) => (
               <tr
                 key={row.subjectId}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-100"

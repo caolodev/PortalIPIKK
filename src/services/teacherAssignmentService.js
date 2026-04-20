@@ -120,3 +120,22 @@ export async function getAllProfessors() {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Busca atribuições ativas de um professor em um ano lectivo.
+ */
+export async function getAssignmentsByProfessor(teacherId, anoLectivoId) {
+  try {
+    const q = query(
+      assignmentCollection,
+      where("teacherId", "==", teacherId),
+      where("anoLectivoId", "==", anoLectivoId),
+      where("endDate", "==", null),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("Erro ao buscar assignments do professor:", error);
+    return [];
+  }
+}

@@ -214,7 +214,7 @@ export default function Cursos() {
                 {!showArchivedModal && (
                   <>
                     <CourseTable
-                      courses={displayedCourses}
+                      displayedCourses={displayedCourses}
                       academicYearActive={academicYearActive}
                       onVincular={(course) =>
                         setVincularModal({ isOpen: true, course })
