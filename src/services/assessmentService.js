@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { getActiveAcademicYear } from "./academicYear";
 import { getAssignmentsByProfessor as getTeacherAssignments } from "./teacherAssignmentService";
+import { getActiveAcademicQuarter } from "./academicQuarter";
 
 const assessmentCollection = collection(db, "assessments");
 const studentRecordsCollection = collection(db, "studentsRecords");

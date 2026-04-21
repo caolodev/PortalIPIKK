@@ -88,7 +88,7 @@ export default function ClassTable({
                         : turma.nomeExibicao || renderDerivedField("N/A")}
                     </p>
                     <p className="text-[9px] sm:text-[10px] md:text-[11px] text-gray-400 mt-0.5">
-                      Criado em {new Date(turma.createdAt).getFullYear()}
+                      Criado em {turma.createdAt ? new Date(turma.createdAt.seconds * 1000).getFullYear() : "Desconhecido"}
                     </p>
                   </td>
                   <td className="px-3 sm:px-4 md:px-6 py-3 md:py-4">
@@ -114,7 +114,12 @@ export default function ClassTable({
                           <p className="text-[9px] sm:text-[10px] md:text-[11px] text-gray-400 mt-0.5">
                             Desde{" "}
                             {turma.director.startDate
-                              ? new Date(turma.director.startDate).getFullYear()
+                              ? (() => {
+                                  const year = new Date(
+                                    turma.director.startDate,
+                                  ).getFullYear();
+                                  return !isNaN(year) ? year : "Desconhecido";
+                                })()
                               : "Desconhecido"}
                           </p>
                         </div>

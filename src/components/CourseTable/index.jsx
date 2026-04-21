@@ -51,7 +51,13 @@ export default function CourseTable({
                   {course.name}
                 </p>
                 <p className="text-[9px] sm:text-[10px] md:text-[11px] text-gray-400 mt-0.5">
-                  Criado em {new Date(course.createdAt).getFullYear()}
+                  Criado em{" "}
+                  {course.createdAt
+                    ? (() => {
+                        const year = new Date(course.createdAt).getFullYear();
+                        return !isNaN(year) ? year : "Desconhecido";
+                      })()
+                    : "Desconhecido"}
                 </p>
               </td>
 
@@ -79,7 +85,12 @@ export default function CourseTable({
                       <p className="text-[9px] sm:text-[10px] md:text-[11px] text-gray-400 mt-0.5">
                         Desde{" "}
                         {course.coordinator.startDate
-                          ? new Date(course.coordinator.startDate).getFullYear()
+                          ? (() => {
+                              const year = new Date(
+                                course.coordinator.startDate,
+                              ).getFullYear();
+                              return !isNaN(year) ? year : "Desconhecido";
+                            })()
                           : "Desconhecido"}
                       </p>
                     </div>

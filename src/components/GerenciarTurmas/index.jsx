@@ -9,12 +9,10 @@ import {
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import PageHeader from "@/components/PageHeader";
-import PaginationControls from "@/components/PaginationControls";
 import InsightCards from "@/components/GerenciarTurmas/InsightCards";
-import ClassTable from "@/components/GerenciarTurmas/ClassTable";
-import NewClassModal from "@/components/GerenciarTurmas/NewClassModal";
-import BindDirectorModal from "@/components/GerenciarTurmas/BindDirectorModal";
-import HistoryModal from "@/components/GerenciarTurmas/HistoryModal";
+import ClassFiltersSection from "@/components/GerenciarTurmas/ClassFiltersSection";
+import ClassTableSection from "@/components/GerenciarTurmas/ClassTableSection";
+import ModalsContainer from "@/components/GerenciarTurmas/ModalsContainer";
 import {
   getClassesByCourse,
   createClass,
@@ -386,56 +384,20 @@ export default function GerenciarTurmas() {
 
       <InsightCards insightData={insightData} />
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <span className="text-sm text-gray-500 whitespace-nowrap">
-            Filtrar por classe
-          </span>
-          <div className="flex flex-wrap items-center gap-2 bg-gray-100 border border-gray-200 rounded-full p-1">
-            {[
-              { value: "ALL", label: "Todas" },
-              ...classOptions.map((classeOption) => ({
-                value: classeOption,
-                label: formatClasseLabel(classeOption),
-              })),
-            ].map((option) => {
-              const isActive = filterClass === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setFilterClass(option.value);
-                    setCurrentPage(1);
-                  }}
-                  className={`rounded-full px-3.5 py-1 text-sm transition-all duration-150 ${
-                    isActive
-                      ? "bg-white border border-gray-200 font-medium text-slate-900"
-                      : "text-gray-500 hover:bg-white hover:text-gray-800"
-                  }`}
-                >
-                  {option.label == "Todas"
-                    ? option.label
-                    : `${option.label} classe`}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      <ClassFiltersSection
+        filterClass={filterClass}
+        setFilterClass={setFilterClass}
+        setCurrentPage={setCurrentPage}
+        classes={classes}
+        activeYear={activeYear}
+      />
 
-        {activeYear ? (
-          <span className="text-xs text-gray-500">
-            Ano lectivo activo: {activeYear.name}
-          </span>
-        ) : (
-          <span className="text-xs text-yellow-700">
-            Nenhum ano lectivo activo. Não é possível criar turmas.
-          </span>
-        )}
-      </div>
-
-      <ClassTable
-        classes={displayedClasses}
+      <ClassTableSection
+        displayedClasses={displayedClasses}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalPages={totalPages}
+        filteredClasses={filteredClasses}
         onBind={(turma) => setBindModal({ open: true, turma })}
         onUnbind={handleUnbind}
         onEdit={handleOpenEdit}
@@ -444,140 +406,32 @@ export default function GerenciarTurmas() {
         actionLoading={actionLoading}
       />
 
-      <PaginationControls
-        currentPage={currentPage}
-        totalPages={totalPages}
-        itemsCount={filteredClasses.length}
-        itemName="turmas"
-        onPrevious={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-        onNext={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+      <ModalsContainer
+        newClassOpen={newClassOpen}
+        setNewClassOpen={setNewClassOpen}
+        editClassOpen={editClassOpen}
+        setEditClassOpen={setEditClassOpen}
+        editTurma={editTurma}
+        setEditTurma={setEditTurma}
+        editTurmaHasStudents={editTurmaHasStudents}
+        setEditTurmaHasStudents={setEditTurmaHasStudents}
+        deleteConfirm={deleteConfirm}
+        setDeleteConfirm={setDeleteConfirm}
+        deleteHasStudents={deleteHasStudents}
+        isDeleting={isDeleting}
+        handleConfirmDelete={handleConfirmDelete}
+        bindModal={bindModal}
+        setBindModal={setBindModal}
+        historyModal={historyModal}
+        setHistoryModal={setHistoryModal}
+        historyLoading={historyLoading}
+        course={course}
+        activeYear={activeYear}
+        actionLoading={actionLoading}
+        handleCreateClass={handleCreateClass}
+        handleUpdateClass={handleUpdateClass}
+        refreshClasses={refreshClasses}
       />
-
-      {newClassOpen && (
-        <NewClassModal
-          mode="create"
-          courseCode={course?.code}
-          courseId={course?.id}
-          activeYearName={activeYear?.name}
-          academicYearActive={!!activeYear}
-          onClose={() => setNewClassOpen(false)}
-          onSubmit={handleCreateClass}
-          loading={actionLoading}
-          submitLabel="Criar Turma"
-          disableSubmit={!activeYear}
-          disableReason={
-            !activeYear
-              ? "Não é possível criar turmas sem um ano lectivo activo."
-              : undefined
-          }
-        />
-      )}
-
-      {editClassOpen && editTurma && (
-        <NewClassModal
-          mode="edit"
-          courseCode={course?.code}
-          activeYearName={activeYear?.name}
-          academicYearActive={editTurma.academicYearActive}
-          initialData={{ classe: editTurma.classe, turno: editTurma.turno }}
-          onClose={() => {
-            setEditClassOpen(false);
-            setEditTurma(null);
-            setEditTurmaHasStudents(false);
-          }}
-          onSubmit={handleUpdateClass}
-          loading={actionLoading}
-          submitLabel="Guardar Alterações"
-          disableSubmit={!editTurma.academicYearActive || editTurmaHasStudents}
-          disableReason={
-            editTurmaHasStudents
-              ? "Esta turma não pode ser alterada porque possui alunos matriculados."
-              : !editTurma.academicYearActive
-                ? "Esta turma não pode ser alterada porque pertence a um ano lectivo encerrado."
-                : undefined
-          }
-        />
-      )}
-
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-            onClick={() => setDeleteConfirm(null)}
-          />
-          <div className="relative bg-white rounded-xl border border-gray-200 w-full max-w-md mx-4 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100">
-              <h2 className="text-base font-semibold text-red-700">
-                Confirmar eliminação de turma
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Tem certeza que deseja eliminar a turma{" "}
-                <strong>{deleteConfirm.nomeExibicao}</strong>? Esta ação é
-                irreversível e só pode ser feita se não houver alunos
-                vinculados.
-              </p>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              {deleteHasStudents || !deleteConfirm.academicYearActive ? (
-                <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
-                  {deleteHasStudents
-                    ? "Não é possível eliminar esta turma porque existem alunos vinculados."
-                    : "Não é possível eliminar esta turma porque pertence a um ano lectivo encerrado."}
-                </div>
-              ) : null}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  disabled={isDeleting}
-                  onClick={() => setDeleteConfirm(null)}
-                  className="flex-1 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmDelete}
-                  disabled={
-                    isDeleting ||
-                    deleteHasStudents ||
-                    !deleteConfirm.academicYearActive
-                  }
-                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDeleting ? (
-                    <>
-                      <FontAwesomeIcon icon={faSpinner} spin /> Eliminando...
-                    </>
-                  ) : (
-                    "Confirmar Eliminação"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {bindModal.open && (
-        <BindDirectorModal
-          turma={bindModal.turma}
-          onClose={() => setBindModal({ open: false, turma: null })}
-          onBind={async () => {
-            setBindModal({ open: false, turma: null });
-            await refreshClasses();
-          }}
-        />
-      )}
-      {historyModal.open && (
-        <HistoryModal
-          turma={historyModal.turma}
-          entries={historyModal.entries}
-          loading={historyLoading}
-          onClose={() =>
-            setHistoryModal({ open: false, turma: null, entries: [] })
-          }
-        />
-      )}
 
       {directorToUnbind && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
