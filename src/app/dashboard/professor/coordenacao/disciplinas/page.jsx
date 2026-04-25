@@ -10,6 +10,7 @@ import {
   getFilteredSubjects,
   getCourseMatrix,
   bindSubjectToCourseMatrix,
+  removeSubjectFromMatrix,
 } from "@/services/subjectService";
 import { getActiveCourseForCoordinator } from "@/services/courseRoleService";
 import { getCourseById } from "@/services/courseService";
@@ -17,6 +18,7 @@ import { getClassTemplatesByCourse } from "@/services/classService";
 import DisciplineCard from "@/components/CoordenacaoDisciplinas/DisciplineCard";
 import MatrixModal from "@/components/CoordenacaoDisciplinas/MatrixModal";
 import ClassSelectorPills from "@/components/CoordenacaoDisciplinas/ClassSelectorPills";
+import DisciplineDeleteConfirm from "@/components/CoordenacaoDisciplinas/DisciplineDeleteConfirm";
 
 function formatClasseLabel(classe) {
   if (classe === undefined || classe === null) return "-";
@@ -36,6 +38,9 @@ export default function DisciplinasPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [disciplineToDelete, setDisciplineToDelete] = useState(null);
+  const [isDeletingDiscipline, setIsDeletingDiscipline] = useState(false);
+  const [deletionError, setDeletionError] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -203,6 +208,40 @@ export default function DisciplinasPage() {
     );
   }, [availableSubjects]);
 
+  const handleDeleteDiscipline = (discipline) => {
+    setDisciplineToDelete(discipline);
+    setDeletionError(null);
+  };
+
+  const handleConfirmDeleteDiscipline = async () => {
+    if (!disciplineToDelete) return;
+
+    setIsDeletingDiscipline(true);
+    try {
+      const result = await removeSubjectFromMatrix(disciplineToDelete.id);
+
+      if (!result.success) {
+        setDeletionError(result.error || "Erro ao desativar disciplina.");
+        return;
+      }
+
+      toast.success("Disciplina desativada com sucesso.");
+      setDisciplineToDelete(null);
+      setDeletionError(null);
+
+      // Atualizar a matriz
+      const matrixRes = await getCourseMatrix(course.id, selectedClass);
+      if (matrixRes.success) {
+        setMatrixSubjects(matrixRes.data);
+      }
+    } catch (error) {
+      setDeletionError("Erro ao desativar disciplina.");
+      console.error(error);
+    } finally {
+      setIsDeletingDiscipline(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-10">
       <PageHeader
@@ -306,7 +345,11 @@ export default function DisciplinasPage() {
                 </div>
               ) : (
                 matrixSubjects.map((entry) => (
-                  <DisciplineCard key={entry.id} discipline={entry} />
+                  <DisciplineCard
+                    key={entry.id}
+                    discipline={entry}
+                    onDelete={handleDeleteDiscipline}
+                  />
                 ))
               )}
             </div>
@@ -339,6 +382,18 @@ export default function DisciplinasPage() {
         onToggle={handleToggleSubject}
         onConfirm={handleConfirmBinding}
         loading={saving}
+      />
+
+      <DisciplineDeleteConfirm
+        open={disciplineToDelete !== null}
+        onClose={() => {
+          setDisciplineToDelete(null);
+          setDeletionError(null);
+        }}
+        discipline={disciplineToDelete}
+        isDeleting={isDeletingDiscipline}
+        onConfirm={handleConfirmDeleteDiscipline}
+        errorMessage={deletionError}
       />
     </div>
   );

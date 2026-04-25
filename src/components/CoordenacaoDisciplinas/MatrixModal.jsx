@@ -36,14 +36,12 @@ export default function MatrixModal({
 
   const filteredSubjects = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return safeSubjects
-      .filter((subject) => {
-        if (!normalized) return true;
-        const name = (subject.name || subject.nome || "").toLowerCase();
-        const sigla = (subject.sigla || "").toLowerCase();
-        return name.includes(normalized) || sigla.includes(normalized);
-      })
-      .slice(0, 10);
+    return safeSubjects.filter((subject) => {
+      if (!normalized) return true;
+      const name = (subject.name || subject.nome || "").toLowerCase();
+      const sigla = (subject.sigla || "").toLowerCase();
+      return name.includes(normalized) || sigla.includes(normalized);
+    });
   }, [query, safeSubjects]);
 
   if (!open) return null;
@@ -71,7 +69,7 @@ export default function MatrixModal({
               Adicionar disciplinas à matriz
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              Digite para filtrar e selecione até 10 disciplinas.
+              Digite para filtrar e selecione quantas disciplinas quiser.
             </p>
           </div>
           <button

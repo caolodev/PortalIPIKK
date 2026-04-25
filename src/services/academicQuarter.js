@@ -11,19 +11,21 @@ import {
   where,
   limit,
   serverTimestamp,
+  orderBy,
 } from "firebase/firestore";
 import { validateAcademicQuarter } from "./validateNewQuarter";
 import { getActiveAcademicYear } from "./academicYear";
 
-const { data: activeYearData } = await getActiveAcademicYear();
-
 const quarterCollection = collection(db, "academicQuarters");
 
-function calculateQuarterStatus(startDate, endDate, yearStatus) {
+// Função pura para derivar o status - Centralizada para evitar inconsistências
+export function calculateQuarterStatus(startDate, endDate, yearStatus) {
   if (yearStatus === "CLOSED") return "CLOSED";
+
   const now = new Date();
   const start = new Date(startDate);
   const end = new Date(endDate);
+  // Garante que o fim do dia conta como ativo
   end.setHours(23, 59, 59, 999);
 
   if (now < start) return "INACTIVE";
@@ -33,19 +35,60 @@ function calculateQuarterStatus(startDate, endDate, yearStatus) {
 
 export async function getActiveAcademicQuarter() {
   try {
-    const snapshot = await getDocs(quarterCollection);
-    const activeQuarters = snapshot.docs
-      .map((d) => ({
-        id: d.id,
-        ...d.data(),
-        status: calculateQuarterStatus(
-          d.data().startDate,
-          d.data().endDate,
-          activeYearData.status,
-        ),
-      }))
+    // 1. Precisamos primeiro do status do ano ativo
+    const yearRes = await getActiveAcademicYear();
+    if (!yearRes.success || !yearRes.data) return { success: true, data: null };
+
+    const yearData = yearRes.data;
+    const snapshot = await getDocs(
+      query(quarterCollection, where("academicYearId", "==", yearData.id)),
+    );
+
+    // 2. Mapeia e encontra o que está "ACTIVE" pelo cálculo derivado
+    const activeQuarter = snapshot.docs
+      .map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          status: calculateQuarterStatus(
+            data.startDate,
+            data.endDate,
+            yearData.status,
+          ),
+        };
+      })
       .find((q) => q.status === "ACTIVE");
-    return { success: true, data: activeQuarters || null };
+    return { success: true, data: activeQuarter || null };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getAcademicQuartersByYear(academicYearId, yearStatus) {
+  try {
+    const q = query(
+      quarterCollection,
+      where("academicYearId", "==", academicYearId),
+    );
+
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs
+      .map((d) => {
+        const docData = d.data();
+        return {
+          id: d.id,
+          ...docData,
+          status: calculateQuarterStatus(
+            docData.startDate,
+            docData.endDate,
+            yearStatus,
+          ),
+        };
+      })
+      .sort((a, b) => (a.number || 0) - (b.number || 0));
+
+    return { success: true, data };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -56,6 +99,8 @@ export async function createAcademicQuarter(data) {
     const yearSnap = await getDoc(
       doc(db, "academicYears", data.academicYearId),
     );
+    if (!yearSnap.exists()) throw new Error("Ano lectivo não encontrado.");
+
     const yearData = { id: yearSnap.id, ...yearSnap.data() };
 
     const snapshot = await getDocs(
@@ -66,13 +111,11 @@ export async function createAcademicQuarter(data) {
     );
     const existing = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+    // Validação de datas e sobreposições
     const validation = validateAcademicQuarter(data, existing, yearData);
     if (!validation.success) return validation;
 
-    const existingNumbers = existing.map((q) => Number(q.number));
-    let nextNumber = 1;
-    while (existingNumbers.includes(nextNumber)) nextNumber++;
-
+    const nextNumber = existing.length + 1;
     if (nextNumber > 3)
       return { success: false, error: "Limite de 3 trimestres atingido." };
 
@@ -81,6 +124,7 @@ export async function createAcademicQuarter(data) {
       number: nextNumber,
       createdAt: serverTimestamp(),
     });
+
     return { success: true, id: docRef.id };
   } catch (err) {
     return { success: false, error: err.message };
@@ -91,69 +135,32 @@ export async function updateAcademicQuarter(id, data) {
   try {
     const docRef = doc(db, "academicQuarters", id);
     const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) throw new Error("Trimestre não encontrado.");
+
     const current = docSnap.data();
 
-    const yearSnap = await getDoc(
-      doc(db, "academicYears", current.academicYearId),
-    );
-    if (yearSnap.data().status === "CLOSED")
-      return { success: false, error: "Ano encerrado." };
-
-    // Verificar notas
-    const qGrades = query(
-      collection(db, "grades"),
-      where("quarterId", "==", id),
-      limit(1),
-    );
-    const gradesSnap = await getDocs(qGrades);
-
+    // Validação de datas e sobreposições (excluindo o próprio registro)
     const snapshot = await getDocs(
       query(
         quarterCollection,
         where("academicYearId", "==", current.academicYearId),
       ),
     );
-    const existing = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const existing = snapshot.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((q) => q.id !== id);
 
-    const validation = validateAcademicQuarter(
-      data,
-      existing,
-      yearSnap.data(),
-      {
-        currentId: id,
-        hasGrades: !gradesSnap.empty,
-      },
+    const yearSnap = await getDoc(
+      doc(db, "academicYears", current.academicYearId),
     );
+    const yearData = { id: yearSnap.id, ...yearSnap.data() };
+    const validation = validateAcademicQuarter(data, existing, yearData);
     if (!validation.success) return validation;
-
     await updateDoc(docRef, {
-      startDate: data.startDate,
-      endDate: data.endDate,
+      ...data,
       updatedAt: serverTimestamp(),
     });
     return { success: true };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
-}
-
-export async function getAcademicQuartersByYear(academicYearId, yearStatus) {
-  try {
-    const snapshot = await getDocs(
-      query(quarterCollection, where("academicYearId", "==", academicYearId)),
-    );
-    const data = snapshot.docs
-      .map((d) => ({
-        id: d.id,
-        ...d.data(),
-        status: calculateQuarterStatus(
-          d.data().startDate,
-          d.data().endDate,
-          yearStatus,
-        ),
-      }))
-      .sort((a, b) => (a.number || 0) - (b.number || 0));
-    return { success: true, data };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -163,34 +170,38 @@ export async function deleteAcademicQuarter(id) {
   try {
     const docRef = doc(db, "academicQuarters", id);
     const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) throw new Error("Trimestre não encontrado.");
+
     const current = docSnap.data();
 
-    const qGrades = query(
-      collection(db, "grades"),
+    // Bloqueio se houver notas (usando a tua coleção assessments/grades)
+    const qAssess = query(
+      collection(db, "assessments"),
       where("quarterId", "==", id),
       limit(1),
     );
-    const gradesSnap = await getDocs(qGrades);
-    if (!gradesSnap.empty)
+    const assessSnap = await getDocs(qAssess);
+
+    if (!assessSnap.empty) {
       return {
         success: false,
-        error: "Não pode apagar um trimestre com notas.",
+        error: "Impossível apagar: Existem notas lançadas neste trimestre.",
       };
+    }
 
-    const yearSnap = await getDoc(
-      doc(db, "academicYears", current.academicYearId),
-    );
+    const yearRes = await getActiveAcademicYear();
     const status = calculateQuarterStatus(
       current.startDate,
       current.endDate,
-      yearSnap.data().status,
+      yearRes.data?.status,
     );
 
-    if (status !== "INACTIVE")
+    if (status === "ACTIVE") {
       return {
         success: false,
-        error: "Apenas trimestres INACTIVE podem ser apagados.",
+        error: "Não pode apagar um trimestre que está actualmente activo.",
       };
+    }
 
     await deleteDoc(docRef);
     return { success: true };

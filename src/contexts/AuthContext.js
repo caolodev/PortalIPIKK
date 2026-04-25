@@ -204,7 +204,8 @@ export function AuthProvider({ children }) {
         createdAt: new Date(),
       });
     }
-    await logout(); // Força o logout para evitar problemas de estado
+    await signOut(auth); // Força o logout para evitar problemas de estado
+    setUser(null); // Força o logout para evitar problemas de estado
     return true;
   }
 
@@ -233,6 +234,7 @@ export function AuthProvider({ children }) {
       await signOut(auth);
       throw new Error("Verifique o seu email antes de Entrar");
     }*/
+   
     const userRef = doc(db, "Users", userCredential.user.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {

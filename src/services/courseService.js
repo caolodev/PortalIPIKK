@@ -330,3 +330,38 @@ export async function hasCourseClasses(courseId) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getCourseMatrix(courseId, classe) {
+  try {
+    const q = query(
+      collection(db, "courseMatrix"),
+      where("courseId", "==", courseId),
+      where("classe", "==", Number(classe)),
+      where("isActive", "==", true),
+    );
+    const snapshot = await getDocs(q);
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const matrixData = doc.data();
+        const subjectRef = doc(db, "subjects", matrixData.subjectId);
+        const subjectSnap = await getDoc(subjectRef);
+        const subjectData = subjectSnap.exists() ? subjectSnap.data() : null;
+
+        return {
+          id: doc.id,
+          classe: matrixData.classe,
+          subjectId: matrixData.subjectId,
+          isActive: matrixData.isActive,
+          subject: subjectData
+        };
+      }),
+    );
+    console.log(
+      `Matriz curricular para curso ${courseId} classe ${classe}:`,
+      data,
+    );
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}

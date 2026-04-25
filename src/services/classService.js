@@ -243,7 +243,7 @@ export async function updateClass(id, academicYearActive, newData) {
 
 export async function deleteClass(id, academicYearActive) {
   try {
-    if (!academicYearActive)
+    if (academicYearActive)
       throw new Error("Operação negada: O ano lectivo não está activo.");
 
     const hasStudents = await hasStudentsInClass(id);

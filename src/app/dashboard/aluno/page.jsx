@@ -1,13 +1,12 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import PageHeader from "../../../components/PageHeader";
+import { useEffect, useState } from "react";
 export default function DashboardDirector() {
   const { user, logout } = useAuth();
   return (
-    <div>
-      <h1>Dashboard do Aluno</h1>
-      <p>Nome: {user.nomeCompleto}</p>
-      <p>Role: {user.role}</p>
-      <button onClick={logout}>Logout</button>
-    </div>
+    <>
+      <PageHeader title={"Dashboard do Aluno"} />
+    </>
   );
 }
