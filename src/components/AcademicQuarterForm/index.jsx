@@ -210,10 +210,9 @@ export default function AcademicQuarterForm({
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               required
-              min={formatDateForInput(activeYearData.startDate)}
-              max={endDate || formatDateForInput(activeYearData.endDate)}
-              disabled={disableStartDate}
-              className={`px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20 focus:border-[#0F2C59] bg-white ${disableStartDate ? "opacity-60 cursor-not-allowed" : "border border-gray-200"}`}
+              className={
+                "px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 border-gray-200"
+              }
             />
           </div>
 
@@ -230,10 +229,9 @@ export default function AcademicQuarterForm({
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               required
-              min={startDate || formatDateForInput(activeYearData.startDate)}
-              max={formatDateForInput(activeYearData.endDate)}
-              disabled={disableEndDate}
-              className={`px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20 focus:border-[#0F2C59] bg-white ${disableEndDate ? "opacity-60 cursor-not-allowed" : "border border-gray-200"}`}
+              className={
+                "px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 border-gray-200"
+              }
             />
           </div>
 

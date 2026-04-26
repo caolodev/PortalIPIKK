@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { baseMenu, roleSpecificMenu } from "../config/menu";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getActiveAcademicYear } from "@/services/academicYear";
+import { getActiveAcademicQuarter } from "@/services/academicQuarter";
 import { faUser } from "@fortawesome/free-solid-svg-icons";
 import PageTransition from "../../components/PageTransition";
 
@@ -16,6 +18,8 @@ export default function DashboardLayout({ children }) {
   const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dynamicMenu, setDynamicMenu] = useState([]);
+  const [activeAcademicYear, setActiveAcademicYear] = useState(null);
+  const [activeAcademicQuarter, setActiveAcademicQuarter] = useState(null);
 
   useEffect(() => {
     async function fetchAdditionalRoles() {
@@ -75,6 +79,28 @@ export default function DashboardLayout({ children }) {
     fetchAdditionalRoles();
   }, [user, loading, router]);
 
+  useEffect(() => {
+    async function fetchActiveAcademicPeriod() {
+      if (loading || !user) return;
+
+      try {
+        const [yearRes, quarterRes] = await Promise.all([
+          getActiveAcademicYear(),
+          getActiveAcademicQuarter(),
+        ]);
+
+        setActiveAcademicYear(yearRes.success ? yearRes.data : null);
+        setActiveAcademicQuarter(quarterRes.success ? quarterRes.data : null);
+      } catch (error) {
+        console.error("Erro ao buscar ano/trimestre activo:", error);
+        setActiveAcademicYear(null);
+        setActiveAcademicQuarter(null);
+      }
+    }
+
+    fetchActiveAcademicPeriod();
+  }, [user, loading]);
+
   if (loading) {
     return (
       <PageTransition>
@@ -124,6 +150,8 @@ export default function DashboardLayout({ children }) {
         lastName={lastName}
         shortName={shortName}
         role={user?.role}
+        activeAcademicYear={activeAcademicYear}
+        activeAcademicQuarter={activeAcademicQuarter}
       />
 
       <main className="md:ml-64 mt-16 min-h-screen p-5">{children}</main>

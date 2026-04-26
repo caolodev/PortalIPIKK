@@ -7,6 +7,8 @@ export default function GradesTable({
   students,
   existingGrades,
   onGradesChange,
+  readOnly = false,
+  academicQuarter,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -77,6 +79,8 @@ export default function GradesTable({
   }, [students, searchTerm, filterStatus, grades]);
 
   const handleGradeChange = (studentId, field, value) => {
+    if (readOnly) return;
+
     // Validate range 0-20
     const numValue = value === "" ? "" : Number(value);
     if (numValue !== "" && (numValue < 0 || numValue > 20)) {
@@ -93,6 +97,8 @@ export default function GradesTable({
   };
 
   const getChangedStudents = useCallback(() => {
+    if (readOnly) return [];
+
     const changed = [];
     students.forEach((student) => {
       const currentGrade = grades[student.id];
@@ -112,7 +118,7 @@ export default function GradesTable({
       }
     });
     return changed;
-  }, [grades, students, existingGrades]);
+  }, [grades, students, existingGrades, readOnly]);
 
   // Expose changed students to parent
   useEffect(() => {
@@ -179,8 +185,9 @@ export default function GradesTable({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border border-slate-200 overflow-hidden bg-white">
-        <div className="overflow-x-auto">
+      <div className="relative rounded-md border border-slate-200 overflow-hidden bg-white">
+        {readOnly && <div className="absolute inset-0 bg-gray-50 opacity-50 z-10" />}
+        <div className="overflow-x-auto relative">
           <table className="w-full">
             <thead>
               <tr className="bg-[#0f2c59] border-b border-slate-200">
@@ -191,13 +198,13 @@ export default function GradesTable({
                   Nome do Aluno
                 </th>
                 <th className="px-2 py-2 text-center text-xs font-semibold text-white uppercase tracking-wider">
+                  MAC
+                </th>
+                <th className="px-2 py-2 text-center text-xs font-semibold text-white uppercase tracking-wider">
                   PP
                 </th>
                 <th className="px-2 py-2 text-center text-xs font-semibold text-white uppercase tracking-wider">
                   PT
-                </th>
-                <th className="px-2 py-2 text-center text-xs font-semibold text-white uppercase tracking-wider">
-                  MAC
                 </th>
                 <th className="px-2 py-2 text-center text-xs font-semibold text-white uppercase tracking-wider">
                   Média
@@ -259,11 +266,27 @@ export default function GradesTable({
                           max="20"
                           step="0.1"
                           placeholder="-"
+                          value={studentGrades.mac}
+                          onChange={(e) =>
+                            handleGradeChange(student.id, "mac", e.target.value)
+                          }
+                          disabled={readOnly}
+                          className="w-14 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs focus:outline-none focus:ring-2 focus:ring-[#0f2c59]/20 focus:border-[#0f2c59] disabled:cursor-not-allowed disabled:opacity-60"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          step="0.1"
+                          placeholder="-"
                           value={studentGrades.pp}
                           onChange={(e) =>
                             handleGradeChange(student.id, "pp", e.target.value)
                           }
-                          className="w-14 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs focus:outline-none focus:ring-2 focus:ring-[#0f2c59]/20 focus:border-[#0f2c59]"
+                          disabled={readOnly}
+                          className="w-14 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs focus:outline-none focus:ring-2 focus:ring-[#0f2c59]/20 focus:border-[#0f2c59] disabled:cursor-not-allowed disabled:opacity-60"
                         />
                       </td>
                       <td className="px-2 py-1.5 text-center">
@@ -277,21 +300,8 @@ export default function GradesTable({
                           onChange={(e) =>
                             handleGradeChange(student.id, "pt", e.target.value)
                           }
-                          className="w-14 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs focus:outline-none focus:ring-2 focus:ring-[#0f2c59]/20 focus:border-[#0f2c59]"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          step="0.1"
-                          placeholder="-"
-                          value={studentGrades.mac}
-                          onChange={(e) =>
-                            handleGradeChange(student.id, "mac", e.target.value)
-                          }
-                          className="w-14 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs focus:outline-none focus:ring-2 focus:ring-[#0f2c59]/20 focus:border-[#0f2c59]"
+                          disabled={readOnly}
+                          className="w-14 px-1.5 py-0.5 border border-slate-200 rounded text-center text-xs focus:outline-none focus:ring-2 focus:ring-[#0f2c59]/20 focus:border-[#0f2c59] disabled:cursor-not-allowed disabled:opacity-60"
                         />
                       </td>
                       <td className="px-2 py-1.5 text-center font-semibold text-xs text-slate-900">
@@ -312,6 +322,11 @@ export default function GradesTable({
           </table>
         </div>
       </div>
+      {readOnly && (
+        <div className="rounded-b-md border-t border-slate-200 bg-gray-100 px-4 py-3 text-xs text-slate-600">
+          Lançamento de notas bloqueado. O {academicQuarter.number}º trimestre terminou.
+        </div>
+      )}
     </div>
   );
 }

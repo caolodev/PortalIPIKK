@@ -103,6 +103,14 @@ export async function createAcademicQuarter(data) {
 
     const yearData = { id: yearSnap.id, ...yearSnap.data() };
 
+    // Bloqueio: Não permitir criar trimestres se o ano já estiver fechado
+    if (yearData.status === "CLOSED") {
+      return {
+        success: false,
+        error: "Não é possível criar trimestres em um ano letivo fechado.",
+      };
+    }
+
     const snapshot = await getDocs(
       query(
         quarterCollection,
@@ -139,6 +147,26 @@ export async function updateAcademicQuarter(id, data) {
 
     const current = docSnap.data();
 
+    // Buscar dados do ano para calcular o status atual antes de permitir edição
+    const yearSnap = await getDoc(
+      doc(db, "academicYears", current.academicYearId),
+    );
+    const yearData = { id: yearSnap.id, ...yearSnap.data() };
+
+    const currentStatus = calculateQuarterStatus(
+      current.startDate,
+      current.endDate,
+      yearData.status,
+    );
+
+    // Bloqueio: Se o trimestre já estiver fechado, impede a edição
+    if (currentStatus === "CLOSED") {
+      return {
+        success: false,
+        error: "Não é possível editar um trimestre que já está fechado.",
+      };
+    }
+
     // Validação de datas e sobreposições (excluindo o próprio registro)
     const snapshot = await getDocs(
       query(
@@ -150,12 +178,9 @@ export async function updateAcademicQuarter(id, data) {
       .map((d) => ({ id: d.id, ...d.data() }))
       .filter((q) => q.id !== id);
 
-    const yearSnap = await getDoc(
-      doc(db, "academicYears", current.academicYearId),
-    );
-    const yearData = { id: yearSnap.id, ...yearSnap.data() };
     const validation = validateAcademicQuarter(data, existing, yearData);
     if (!validation.success) return validation;
+
     await updateDoc(docRef, {
       ...data,
       updatedAt: serverTimestamp(),
@@ -200,6 +225,14 @@ export async function deleteAcademicQuarter(id) {
       return {
         success: false,
         error: "Não pode apagar um trimestre que está actualmente activo.",
+      };
+    }
+
+    // Bloqueio: Não permite apagar se o trimestre já estiver fechado
+    if (status === "CLOSED") {
+      return {
+        success: false,
+        error: "Não é possível apagar um trimestre que já foi encerrado.",
       };
     }
 

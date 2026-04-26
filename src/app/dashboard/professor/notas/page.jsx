@@ -24,8 +24,14 @@ import {
   getStudentCountsByClassIds,
 } from "../../../../services/classService";
 import { getAssignmentsByProfessor } from "../../../../services/teacherAssignmentService";
-import { getActiveAcademicYear } from "../../../../services/academicYear";
-import { getActiveAcademicQuarter } from "../../../../services/academicQuarter";
+import {
+  getActiveAcademicYear,
+  getAcademicYears,
+} from "../../../../services/academicYear";
+import {
+  getActiveAcademicQuarter,
+  getAcademicQuartersByYear,
+} from "../../../../services/academicQuarter";
 import ClassCardGrid from "@/components/ProfessorAssignments/ClassCardGrid";
 import ClassFilter from "@/components/ProfessorAssignments/ClassFilter";
 import ClassSelectionStep from "@/components/LancamentoNotas/ClassSelectionStep";
@@ -51,6 +57,7 @@ export default function LancamentoNotas() {
   const [students, setStudents] = useState([]);
   const [existingGrades, setExistingGrades] = useState({});
   const [academicYear, setAcademicYear] = useState(null);
+  const [academicQuarters, setAcademicQuarters] = useState([]);
   const [academicQuarter, setAcademicQuarter] = useState(null);
   const [gradesData, setGradesData] = useState(null);
   const [gradesCache, setGradesCache] = useState({}); // Cache para preservar notas ao mudar de disciplina
@@ -67,21 +74,47 @@ export default function LancamentoNotas() {
       if (!user) return;
       setLoading(true);
       try {
-        // Fetch academic year and quarter
         const yearRes = await getActiveAcademicYear();
+        let currentYear = null;
+
         if (yearRes.success && yearRes.data) {
-          setAcademicYear(yearRes.data);
+          currentYear = yearRes.data;
+        } else {
+          const allYearsRes = await getAcademicYears();
+          const allYears = allYearsRes.success ? allYearsRes.data || [] : [];
+          currentYear =
+            allYears.sort(
+              (a, b) => new Date(b.startDate) - new Date(a.startDate),
+            )[0] || null;
         }
 
-        const quarterRes = await getActiveAcademicQuarter();
-        if (quarterRes.success && quarterRes.data) {
-          setAcademicQuarter(quarterRes.data);
+        setAcademicYear(currentYear);
+
+        if (currentYear) {
+          const quartersRes = await getAcademicQuartersByYear(
+            currentYear.id,
+            currentYear.status,
+          );
+          const quarterList = quartersRes.success ? quartersRes.data || [] : [];
+          setAcademicQuarters(quarterList);
+
+          const activeQuarter = quarterList.find((q) => q.status === "ACTIVE");
+          const closedQuarter =
+            [...quarterList]
+              .filter((q) => q.status === "CLOSED")
+              .sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0] ||
+            null;
+
+          setAcademicQuarter(activeQuarter || closedQuarter || null);
+        } else {
+          setAcademicQuarters([]);
+          setAcademicQuarter(null);
         }
 
         // Fetch professor assignments
         const assignmentsData = await getAssignmentsByProfessor(
           user.uid,
-          yearRes.data?.id || "",
+          currentYear?.id || "",
         );
         setAssignments(assignmentsData);
 
@@ -109,7 +142,6 @@ export default function LancamentoNotas() {
         }
       } catch (error) {
         console.error("Erro ao buscar dados iniciais:", error);
-        toast.error("Erro ao carregar dados.");
       } finally {
         setLoading(false);
       }
@@ -120,7 +152,7 @@ export default function LancamentoNotas() {
   // Fetch disciplines when class is selected
   useEffect(() => {
     async function fetchDisciplines() {
-      if (!selectedClass || !user || !academicYear) {
+      if (!selectedClass || !user || !academicYear || !academicQuarter) {
         setDisciplines([]);
         setSelectedDiscipline(null);
         return;
@@ -150,12 +182,12 @@ export default function LancamentoNotas() {
       }
     }
     fetchDisciplines();
-  }, [selectedClass, user, academicYear]);
+  }, [selectedClass, user, academicYear, academicQuarter]);
 
   // Fetch students and grades when discipline is selected
   useEffect(() => {
     async function fetchGradesData() {
-      if (!selectedDiscipline || !selectedClass || !academicQuarter) {
+      if (!selectedDiscipline || !selectedClass) {
         setStudents([]);
         setExistingGrades({});
         setGradesData(null);
@@ -172,27 +204,30 @@ export default function LancamentoNotas() {
           setStudents([]);
         }
 
-        // Verificar cache primeiro
         const cacheKey = `${selectedClass.id}_${selectedDiscipline.subjectId}`;
-        if (gradesCache[cacheKey]) {
-          // Usar dados em cache
-          setExistingGrades(gradesCache[cacheKey]);
+        if (academicQuarter) {
+          // Verificar cache primeiro
+          if (gradesCache[cacheKey]) {
+            setExistingGrades(gradesCache[cacheKey]);
+          } else {
+            const gradesResult = await getGradesByContext(
+              selectedClass.id,
+              selectedDiscipline.subjectId,
+              academicQuarter.id,
+            );
+
+            const gradeData = gradesResult.success
+              ? gradesResult.data || {}
+              : {};
+            setExistingGrades(gradeData);
+
+            setGradesCache((prev) => ({
+              ...prev,
+              [cacheKey]: gradeData,
+            }));
+          }
         } else {
-          // Fetch existing grades from Firebase
-          const gradesResult = await getGradesByContext(
-            selectedClass.id,
-            selectedDiscipline.subjectId,
-            academicQuarter.id,
-          );
-
-          const gradeData = gradesResult.success ? gradesResult.data || {} : {};
-          setExistingGrades(gradeData);
-
-          // Guardar no cache
-          setGradesCache((prev) => ({
-            ...prev,
-            [cacheKey]: gradeData,
-          }));
+          setExistingGrades({});
         }
       } catch (error) {
         console.error("Erro ao buscar notas:", error);
@@ -214,12 +249,19 @@ export default function LancamentoNotas() {
     }
 
     if (
-      !selectedClass ||
-      !selectedDiscipline ||
       !academicYear ||
       !academicQuarter ||
-      !user
+      academicQuarter.status !== "ACTIVE"
     ) {
+      const warning =
+        academicQuarter?.status === "CLOSED"
+          ? `Lançamento de notas bloqueado. Trimestre ${academicQuarter.number || academicQuarter.id} terminou.`
+          : "Lançamento de notas bloqueado. Não existe trimestre ativo.";
+      toast.error(warning);
+      return;
+    }
+
+    if (!selectedClass || !selectedDiscipline || !academicYear || !user) {
       toast.error("Contexto incompleto para guardar notas.");
       return;
     }
@@ -282,6 +324,32 @@ export default function LancamentoNotas() {
   };
 
   // Computed values
+  const hasAcademicYear = Boolean(academicYear);
+  const hasActiveQuarter = Boolean(
+    academicQuarter && academicQuarter.status === "ACTIVE",
+  );
+  const allQuartersClosed =
+    academicQuarters.length > 0 &&
+    academicQuarters.every((q) => q.status === "CLOSED");
+  const allQuartersInactive =
+    academicQuarters.length > 0 &&
+    academicQuarters.every((q) => q.status === "INACTIVE");
+  const hasQuarterSelected = Boolean(academicQuarter);
+  const showOnlyWarning =
+    !hasAcademicYear ||
+    academicQuarters.length === 0 ||
+    allQuartersInactive ||
+    (!hasQuarterSelected && academicQuarters.length > 0);
+  const pageReadOnly =
+    Boolean(academicQuarter) && academicQuarter.status === "CLOSED";
+  const blockedMessage = !hasAcademicYear
+    ? "Não existe ano lectivo activo. O lançamento de notas está bloqueado."
+    : allQuartersInactive
+      ? "Todos os trimestres estão inativos. O lançamento de notas está bloqueado."
+      : academicQuarter?.status === "CLOSED"
+        ? `${academicQuarter.number}º trimestre terminou. Visualização apenas, sem edição.`
+        : "Não existe trimestre activo. Visualização apenas, sem edição.";
+
   const classStudentCount = useMemo(() => studentCounts, [studentCounts]);
 
   const classOptions = useMemo(() => {
@@ -325,6 +393,24 @@ export default function LancamentoNotas() {
     );
   }
 
+  if (showOnlyWarning) {
+    return (
+      <div className="max-w-7xl mx-auto p-3 md:p-4">
+        <PageHeader
+          title="Lançamento de Notas"
+          description="Não é possível lançar notas no momento."
+          fontAwesomeIcon={faBookOpen}
+        />
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 mt-8">
+          <p className="text-sm font-semibold text-slate-900">
+            Lançamento de notas bloqueado
+          </p>
+          <p className="mt-2 text-sm text-slate-700">{blockedMessage}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (classes.length === 0) {
     return (
       <div className="max-w-7xl mx-auto p-4 md:p-6">
@@ -358,6 +444,16 @@ export default function LancamentoNotas() {
         fontAwesomeIcon={faBookOpen}
       />
 
+      {pageReadOnly && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6 text-sm text-slate-900">
+          <div className="flex flex-col">
+            <p className="text-sm font-semibold text-slate-900">
+              Lançamento de notas bloqueado
+            </p>
+            <p className="text-[14px] text-slate-600">{blockedMessage}</p>
+          </div>
+        </div>
+      )}
       {/* Stepper Indicator */}
       <div className="mt-6 mb-6">
         <StepperIndicator
@@ -428,6 +524,8 @@ export default function LancamentoNotas() {
                   students={students}
                   existingGrades={existingGrades}
                   onGradesChange={setGradesData}
+                  readOnly={pageReadOnly}
+                  academicQuarter={academicQuarter}
                 />
               </div>
 
@@ -446,7 +544,7 @@ export default function LancamentoNotas() {
                 </button>
                 <button
                   onClick={handleSaveGrades}
-                  disabled={saving}
+                  disabled={saving || pageReadOnly}
                   className="px-3 py-2 rounded-md bg-[#0f2c59] text-white font-medium text-sm hover:bg-[#0a1e40] transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
                   {saving ? (

@@ -161,6 +161,14 @@ export async function saveStudentGrades({
   grades,
 }) {
   try {
+    if (!quarterId || !yearId) {
+      return {
+        success: false,
+        error:
+          "Não há trimestre ativo ou ano letivo válido. Lançamento bloqueado.",
+      };
+    }
+
     // --- 1. VALIDAÇÃO DE PERÍODO (SECURITY CHECK) ---
     const [quarterSnap, yearSnap] = await Promise.all([
       getDoc(doc(db, "academicQuarters", quarterId)),
