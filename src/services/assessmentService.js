@@ -165,7 +165,7 @@ export async function saveStudentGrades({
       return {
         success: false,
         error:
-          "Não há trimestre ativo ou ano letivo válido. Lançamento bloqueado.",
+          "Não há trimestre activo ou ano lectivo válido. Lançamento bloqueado.",
       };
     }
 

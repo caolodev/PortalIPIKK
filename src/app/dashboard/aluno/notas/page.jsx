@@ -75,28 +75,24 @@ export default function ViewNotas() {
 
       <StatsCards data={processed} />
 
-      <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
-        <Filters
-          quarters={quarters}
-          selectedQuarter={selectedQuarter}
-          setSelectedQuarter={setSelectedQuarter}
-          selectedSubject={selectedSubject}
-          setSelectedSubject={setSelectedSubject}
-          subjects={subjects}
-        />
-      </div>
+      <Filters
+        quarters={quarters}
+        selectedQuarter={selectedQuarter}
+        setSelectedQuarter={setSelectedQuarter}
+        selectedSubject={selectedSubject}
+        setSelectedSubject={setSelectedSubject}
+        subjects={subjects}
+      />
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm p-6">
-        {selectedQuarter ? (
-          <GradesTable data={processed} />
-        ) : (
-          <div className="flex min-h-45 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600">
-            Não existe trimestre activo neste momento. Aguarde a abertura do
-            próximo trimestre ou selecione um trimestre fechado para consultar
-            as notas.
-          </div>
-        )}
-      </div>
+      {selectedQuarter ? (
+        <GradesTable data={processed} />
+      ) : (
+        <div className="flex min-h-45 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600">
+          Não existe trimestre activo neste momento. Aguarde a abertura do
+          próximo trimestre ou selecione um trimestre fechado para consultar as
+          notas.
+        </div>
+      )}
 
       <div className="grid gap-5 xl:grid-cols-2">
         <AcademicProfile data={processed} />

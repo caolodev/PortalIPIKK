@@ -107,7 +107,7 @@ export async function createAcademicQuarter(data) {
     if (yearData.status === "CLOSED") {
       return {
         success: false,
-        error: "Não é possível criar trimestres em um ano letivo fechado.",
+        error: "Não é possível criar trimestres em um ano lectivo fechado.",
       };
     }
 

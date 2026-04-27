@@ -117,7 +117,7 @@ export default function ProfessorAssignmentsPage() {
 
         const yearRes = await getActiveAcademicYear();
         if (!yearRes.success || !yearRes.data) {
-          toast.error(yearRes.error || "Erro ao carregar o ano letivo ativo.");
+          toast.error(yearRes.error || "Erro ao carregar o ano lectivo ativo.");
           return;
         }
 

@@ -27,6 +27,7 @@ function parseNumericGrade(value) {
 import { Activity, TrendingUp, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import PageHeader from "../../../components/PageHeader";
+import QuarterDropdown from "../../../components/QuarterDropDown";
 import { useStudentGrades } from "@/hooks/useStudentGrades";
 import Card from "@/components/ui/Card";
 
@@ -142,10 +143,10 @@ export default function DashboardDirector() {
         buttonIcon={null}
       />
 
-      <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-500">
-            Trimestre ativo
+          <p className="text-xl font-light text-slate-500">
+            Trimestre activo
           </p>
           <p className="text-lg font-bold text-[#0F2C59]">
             {selectedQuarter
@@ -153,33 +154,11 @@ export default function DashboardDirector() {
               : "Sem trimestre activo"}
           </p>
         </div>
-        <div className="min-w-50">
-          <label className="sr-only">Selecionar trimestre</label>
-          <select
-            value={selectedQuarter ?? ""}
-            onChange={(e) => {
-              setSelectedQuarter(
-                e.target.value ? Number(e.target.value) : null,
-              );
-            }}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#0F2C59] focus:ring-1 focus:ring-[#0F2C59]/20"
-          >
-            {quarters.length > 0 ? (
-              quarters.map((quarter) => (
-                <option key={quarter.id} value={quarter.number}>
-                  {quarter.number}º Trimestre
-                  {quarter.status === "ACTIVE"
-                    ? " (Activo)"
-                    : quarter.status === "CLOSED"
-                      ? " (Fechado)"
-                      : ""}
-                </option>
-              ))
-            ) : (
-              <option value="">Sem trimestres</option>
-            )}
-          </select>
-        </div>
+        <QuarterDropdown
+          quarters={quarters}
+          selectedQuarter={selectedQuarter}
+          onChange={setSelectedQuarter}
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
