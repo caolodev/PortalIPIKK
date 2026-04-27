@@ -1,3 +1,5 @@
-export default function Relatorios() {
-  return <h1>Relatorios do Director</h1>;
+import UnderDevelopment from "@/components/UnderDevelopment";
+
+export default function RelatoriosDirectorEmDesenvolvimento() {
+  return <UnderDevelopment />;
 }

@@ -3,6 +3,15 @@ import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faFilter } from "@fortawesome/free-solid-svg-icons";
 
+function parseGradeValue(value) {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export default function GradesTable({
   students,
   existingGrades,
@@ -24,11 +33,23 @@ export default function GradesTable({
     return initialGrades;
   });
 
+  useEffect(() => {
+    const initialGrades = {};
+    students.forEach((student) => {
+      initialGrades[student.id] = existingGrades[student.id] || {
+        pp: "",
+        pt: "",
+        mac: "",
+      };
+    });
+    setGrades(initialGrades);
+  }, [students, existingGrades]);
+
   // Calculate status based on grades
   const calculateStatus = (pp, pt, mac) => {
-    const n1 = pp !== "" ? Number(pp) : null;
-    const n2 = pt !== "" ? Number(pt) : null;
-    const nMAC = mac !== "" ? Number(mac) : null;
+    const n1 = parseGradeValue(pp);
+    const n2 = parseGradeValue(pt);
+    const nMAC = parseGradeValue(mac);
 
     const validNotes = [n1, n2, nMAC].filter((v) => v !== null && !isNaN(v));
     if (validNotes.length === 0) return { average: "-", status: "-" };
@@ -186,7 +207,9 @@ export default function GradesTable({
 
       {/* Table */}
       <div className="relative rounded-md border border-slate-200 overflow-hidden bg-white">
-        {readOnly && <div className="absolute inset-0 bg-gray-50 opacity-50 z-10" />}
+        {readOnly && (
+          <div className="absolute inset-0 bg-gray-50 opacity-50 z-10" />
+        )}
         <div className="overflow-x-auto relative">
           <table className="w-full">
             <thead>
@@ -324,7 +347,8 @@ export default function GradesTable({
       </div>
       {readOnly && (
         <div className="rounded-b-md border-t border-slate-200 bg-gray-100 px-4 py-3 text-xs text-slate-600">
-          Lançamento de notas bloqueado. O {academicQuarter.number}º trimestre terminou.
+          Lançamento de notas bloqueado. O {academicQuarter.number}º trimestre
+          terminou.
         </div>
       )}
     </div>

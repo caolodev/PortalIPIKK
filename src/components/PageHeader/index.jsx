@@ -8,10 +8,12 @@ export default function PageHeader({
   buttonText,
   onButtonClick,
   buttonTitle,
-  fontAwesomeIcon = faCalendar,
+  fontAwesomeIcon,
+  buttonIcon = faCalendar,
   buttonDisabled = false,
   disabledReason = "",
 }) {
+  const resolvedIcon = buttonIcon ?? fontAwesomeIcon;
   const showButton = Boolean(buttonText);
 
   return (
@@ -37,11 +39,12 @@ export default function PageHeader({
               : "border-[#0F2C59] text-[#0F2C59] hover:bg-[#0F2C59] hover:text-white"
           }`}
         >
-          <FontAwesomeIcon
-            icon={fontAwesomeIcon !== undefined ? fontAwesomeIcon : faCalendar}
-            className="w-3.5 h-3.5"
-          />
-          <FontAwesomeIcon icon={faPlus} className="w-2.5 h-2.5" />
+          {resolvedIcon && (
+            <FontAwesomeIcon icon={resolvedIcon} className="w-3.5 h-3.5" />
+          )}
+          {resolvedIcon && (
+            <FontAwesomeIcon icon={faPlus} className="w-2.5 h-2.5" />
+          )}
           <span className="text-sm font-medium">{buttonText}</span>
         </button>
       )}

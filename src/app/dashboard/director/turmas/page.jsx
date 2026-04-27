@@ -1,3 +1,5 @@
-export default function Turmas() {
-  return <h1>Insights das Turmas</h1>;
+import UnderDevelopment from "@/components/UnderDevelopment";
+
+export default function TurmasDirectorEmDesenvolvimento() {
+  return <UnderDevelopment />;
 }

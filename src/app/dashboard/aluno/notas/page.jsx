@@ -1,8 +1,7 @@
 "use client";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { useMemo, useState } from "react";
-
+import { useAuth } from "@/contexts/AuthContext";
 import { useStudentGrades } from "@/hooks/useStudentGrades";
 import PageHeader from "@/components/PageHeader";
 import Filters from "@/components/notas/Filters";
@@ -13,25 +12,36 @@ import Distribution from "@/components/notas/Distribution";
 
 export default function ViewNotas() {
   const { user } = useAuth();
-
-  const { dataTable, loading, selectedQuarter, setSelectedQuarter } =
-    useStudentGrades(user);
-
+  const {
+    dataTable,
+    loading,
+    selectedQuarter,
+    setSelectedQuarter,
+    student,
+    quarters,
+  } = useStudentGrades(user);
   const [selectedSubject, setSelectedSubject] = useState("ALL");
 
-  const subjects = dataTable.map((d) => ({
-    id: d.subjectId,
-    name: d.subject?.name,
-  }));
+  const subjects = useMemo(
+    () =>
+      dataTable
+        .map((d) => ({
+          id: d.subjectId,
+          name: d.subject?.name,
+        }))
+        .filter(
+          (item, index, list) =>
+            list.findIndex((entry) => entry.id === item.id) === index,
+        ),
+    [dataTable],
+  );
 
   const processed = useMemo(() => {
     return dataTable
       .map((row) => {
-        const filtered = row.assessments.filter(
+        const latest = row.assessments.find(
           (a) => a.quarterNumber === selectedQuarter,
         );
-
-        const latest = filtered[0];
         const g = latest?.grades || {};
 
         return {
@@ -48,27 +58,50 @@ export default function ViewNotas() {
       );
   }, [dataTable, selectedQuarter, selectedSubject]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-[55vh] flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 rounded-full border-4 border-[#0F2C59] border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
-      <PageHeader title="Notas" />
+    <div className="space-y-6 p-4">
+      <PageHeader
+        title={`Notas de ${student?.nomeCompleto || user?.nomeCompleto}`}
+        description={`Curso: ${student?.courseName || "—"} · Turma: ${student?.turmaName || "—"}`}
+      />
 
       <StatsCards data={processed} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+        <Filters
+          quarters={quarters}
+          selectedQuarter={selectedQuarter}
+          setSelectedQuarter={setSelectedQuarter}
+          selectedSubject={selectedSubject}
+          setSelectedSubject={setSelectedSubject}
+          subjects={subjects}
+        />
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm p-6">
+        {selectedQuarter ? (
+          <GradesTable data={processed} />
+        ) : (
+          <div className="flex min-h-45 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600">
+            Não existe trimestre activo neste momento. Aguarde a abertura do
+            próximo trimestre ou selecione um trimestre fechado para consultar
+            as notas.
+          </div>
+        )}
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
         <AcademicProfile data={processed} />
         <Distribution data={processed} />
       </div>
-      
-      <Filters
-        selectedQuarter={selectedQuarter}
-        setSelectedQuarter={setSelectedQuarter}
-        selectedSubject={selectedSubject}
-        setSelectedSubject={setSelectedSubject}
-        subjects={subjects}
-      />
-      <GradesTable data={processed} />
     </div>
   );
 }

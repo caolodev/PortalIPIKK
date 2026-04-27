@@ -22,7 +22,7 @@ const quarterCollection = collection(db, "academicQuarters");
 export function calculateQuarterStatus(startDate, endDate, yearStatus) {
   if (yearStatus === "CLOSED") return "CLOSED";
 
-  const now = new Date();
+  const now = new Date("2026-07-07");
   const start = new Date(startDate);
   const end = new Date(endDate);
   // Garante que o fim do dia conta como ativo

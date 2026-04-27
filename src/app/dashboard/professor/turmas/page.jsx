@@ -1,7 +1,5 @@
-import React from "react";
+import UnderDevelopment from "@/components/UnderDevelopment";
 
-const page = () => {
-  return <div>page</div>;
-};
-
-export default page;
+export default function TurmasProfessorEmDesenvolvimento() {
+  return <UnderDevelopment />;
+}

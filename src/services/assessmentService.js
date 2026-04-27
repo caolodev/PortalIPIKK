@@ -201,9 +201,9 @@ export async function saveStudentGrades({
 
     const { pp, pt, mac } = grades;
 
-    const npProva = pp !== "" && pp !== null ? Number(pp) : null;
-    const ntProva = pt !== "" && pt !== null ? Number(pt) : null;
-    const nMAC = mac !== "" && mac !== null ? Number(mac) : null;
+    const npProva = pp !== "" && pp != null ? Number(pp) : null;
+    const ntProva = pt !== "" && pt != null ? Number(pt) : null;
+    const nMAC = mac !== "" && mac != null ? Number(mac) : null;
 
     // Cálculo da Média Trimestral (MT)
     const validNotes = [npProva, ntProva, nMAC].filter(
